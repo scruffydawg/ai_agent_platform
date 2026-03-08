@@ -1,0 +1,130 @@
+{
+    "nodes": [
+        {
+            "id": "SOUL",
+            "type": "soul",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "data": {
+                "label": "SOUL"
+            },
+            "width": 200,
+            "height": 157,
+            "selected": true,
+            "dragging": false
+        },
+        {
+            "id": "Architect",
+            "type": "soul",
+            "position": {
+                "x": 250,
+                "y": 0
+            },
+            "data": {
+                "label": "Architect"
+            },
+            "width": 200,
+            "height": 157
+        },
+        {
+            "id": "Coder",
+            "type": "soul",
+            "position": {
+                "x": 500,
+                "y": 0
+            },
+            "data": {
+                "label": "Coder"
+            },
+            "width": 200,
+            "height": 157
+        },
+        {
+            "id": "Security",
+            "type": "soul",
+            "position": {
+                "x": 0,
+                "y": 200
+            },
+            "data": {
+                "label": "Security"
+            },
+            "width": 200,
+            "height": 157
+        },
+        {
+            "id": "ADHD_UX",
+            "type": "soul",
+            "position": {
+                "x": 250,
+                "y": 200
+            },
+            "data": {
+                "label": "ADHD_UX"
+            },
+            "width": 200,
+            "height": 157
+        },
+        {
+            "id": "Analyst",
+            "type": "soul",
+            "position": {
+                "x": 500,
+                "y": 200
+            },
+            "data": {
+                "label": "Analyst"
+            },
+            "width": 200,
+            "height": 157
+        },
+        {
+            "id": "Observer",
+            "type": "soul",
+            "position": {
+                "x": 0,
+                "y": 400
+            },
+            "data": {
+                "label": "Observer"
+            },
+            "width": 200,
+            "height": 157
+        },
+        {
+            "id": "Researcher",
+            "type": "soul",
+            "position": {
+                "x": 268.4397677793904,
+                "y": 93.78809869375903
+            },
+            "data": {
+                "label": "Researcher"
+            },
+            "width": 200,
+            "height": 157,
+            "selected": false,
+            "positionAbsolute": {
+                "x": 268.4397677793904,
+                "y": 93.78809869375903
+            },
+            "dragging": false
+        }
+    ],
+    "edges": [
+        {
+            "source": "Researcher",
+            "sourceHandle": null,
+            "target": "Analyst",
+            "targetHandle": null,
+            "animated": true,
+            "style": {
+                "stroke": "var(--accent-cyan)",
+                "strokeWidth": 2
+            },
+            "id": "reactflow__edge-Researcher-Analyst"
+        }
+    ]
+}

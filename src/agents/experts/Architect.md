@@ -2,6 +2,10 @@
 model: gpt-4-turbo
 temperature: 0.2
 roles: [architect, lead_dev]
+tools:
+  - file_system
+  - canvas_automation
+  - search_reference_kb
 ---
 
 # SOUL

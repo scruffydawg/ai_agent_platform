@@ -2,6 +2,10 @@
 model: qwen2.5-32b-instruct
 temperature: 0.1
 roles: [primary_interface, user_proxy]
+tools:
+- web_search
+- browser_proxy
+- search_reference_kb
 ---
 
 # SOUL

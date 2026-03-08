@@ -5,6 +5,8 @@ from src.core.state_schema import AgentState
 from src.ui.cli import cli # For progress tracking updates
 from src.agents.persona_loader import persona_loader
 from src.utils.logger import logger
+from pathlib import Path
+import json
 
 class StateGraphOrchestrator(BaseAgent):
     """
@@ -20,6 +22,45 @@ class StateGraphOrchestrator(BaseAgent):
         self.nodes: Dict[str, Callable[[AgentState], AgentState]] = {}
         self.edges: Dict[str, Dict[str, Any]] = {} # node -> dict of edge conditions
         self.max_transitions = max_transitions
+        self._load_dynamic_flow()
+
+    def _load_dynamic_flow(self):
+        """Loads the graph topology from the persisted UI flow."""
+        flow_path = Path("data/swarm_flow.json")
+        if not flow_path.exists():
+            return
+
+        try:
+            with open(flow_path, "r") as f:
+                flow = json.load(f)
+            
+            # Map edges
+            for edge in flow.get("edges", []):
+                source = edge.get("source")
+                target = edge.get("target")
+                if source and target:
+                    self.add_edge(source, target)
+                    
+            # Map nodes to Expert Personas
+            for node in flow.get("nodes", []):
+                name = node.get("id")
+                if name:
+                    self.add_node(name, self._create_expert_node(name))
+        except Exception as e:
+            logger.error(f"Failed to load dynamic flow: {e}")
+
+    def _create_expert_node(self, expert_name: str):
+        """Standard wrapper to invoke an expert's persona logic as a graph node."""
+        async def expert_node_func(state: AgentState) -> AgentState:
+            persona = persona_loader.load_persona(expert_name)
+            if not persona:
+                 state.add_message("system", f"Expert {expert_name} persona not found.", sender=expert_name)
+                 return state
+
+            # Mocking execution for now, but in reality we'd call LLM with persona context
+            state.add_message("assistant", f"Processing via {expert_name}...", sender=expert_name)
+            return state
+        return expert_node_func
 
     def add_node(self, name: str, node_func: Callable[[AgentState], AgentState]):
         """Registers a function or Agent's run method as an executable Node."""

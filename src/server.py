@@ -1,6 +1,6 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException, Depends
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Header, Query, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from typing import List, Optional
 import asyncio
@@ -30,6 +30,7 @@ import re
 from src.routers.memory import router as memory_router
 from src.routers.registry_chat import router as registry_chat_router
 from src.routers.knowledge import router as knowledge_router
+from src.routers.soul_chat import router as soul_chat_router
 from src.security.input_filter import input_filter
 from src.security.output_filter import output_filter
 from src.security.whitelist import whitelist
@@ -57,6 +58,7 @@ SESSIONS_DIR = DATA_DIR / "sessions"
 CONFIG_FILE = DATA_DIR / "config.json"
 
 SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+SWARM_FLOW_FILE = DATA_DIR / "swarm_flow.json"
 
 # Runtime Config Management
 class AppConfig(BaseModel):
@@ -99,6 +101,7 @@ app.include_router(tools_router)
 app.include_router(memory_router)
 app.include_router(registry_chat_router)
 app.include_router(knowledge_router)
+app.include_router(soul_chat_router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -468,6 +471,50 @@ async def delete_swarm_expert(name: str):
     
     file_path.unlink()
     return {"status": "success", "message": f"Expert {name} has been dissolved."}
+
+# Swarm Flow Management
+@app.get("/swarm/flow")
+async def get_swarm_flow():
+    """Returns the persisted graph structure (nodes & edges)."""
+    if not SWARM_FLOW_FILE.exists():
+        return {"nodes": [], "edges": []}
+    with open(SWARM_FLOW_FILE, "r") as f:
+        return json.load(f)
+
+@app.post("/swarm/flow")
+async def save_swarm_flow(request: Request):
+    """Persists the graph structure from the ReactFlow UI."""
+    data = await request.json()
+    with open(SWARM_FLOW_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+    return {"status": "success"}
+@app.post("/knowledge/upload")
+async def upload_knowledge(file: UploadFile = File(...), category: str = "general"):
+    """Handles document uploads and ingestion into the Knowledge Base."""
+    try:
+        content = await file.read()
+        text = content.decode("utf-8")
+        metadata = {
+            "filename": file.filename,
+            "category": category,
+            "uploaded_at": time.time()
+        }
+        from src.memory.knowledge_base import kb_manager
+        success = await kb_manager.ingest_document(text, metadata)
+        if success:
+            return {"status": "success", "filename": file.filename}
+        else:
+            raise HTTPException(status_code=500, detail="Ingestion failed")
+    except Exception as e:
+        logger.error(f"Upload error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/knowledge/search")
+async def search_knowledge(q: str):
+    """Global search for reference documentation."""
+    from src.memory.knowledge_base import kb_manager
+    results = await kb_manager.search_reference(q)
+    return {"results": results}
 
 # Session Management Endpoints
 @app.get("/sessions")

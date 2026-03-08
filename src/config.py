@@ -54,5 +54,5 @@ SEARXNG_URL = os.getenv("SEARXNG_URL", f"http://localhost:8080/search")
 # --- LLM & Memory Settings (Tai Mae Optimized) ---
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "qwen3.5:27b") # Optimized for 24GB VRAM (RTX 3090)
 LLM_ENGINE = os.getenv("LLM_ENGINE", "ollama")
-LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://127.0.0.1:11434/v1")
 MEMORY_SOFT_LIMIT = 50000  # Optimized for Qwen 262K context window

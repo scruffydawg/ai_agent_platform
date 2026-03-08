@@ -263,6 +263,7 @@ async def get_tool_registry():
         "voice_in.py":         "mic",
         "voice_out.py":        "speaker",
         "web_search.py":       "globe",
+        "knowledge_search.py": "library",
     }
 
     docs_map: Dict[str, List[DocsLink]] = {
@@ -275,6 +276,7 @@ async def get_tool_registry():
         "docker_management.py":DOCKER_DOCS,
         "voice_in.py":         VOICE_DOCS,
         "voice_out.py":        VOICE_DOCS,
+        "knowledge_search.py": [DocsLink(label="SentenceTransformers", url="https://www.sbert.net/"), DocsLink(label="Qdrant Vector Database", url="https://qdrant.tech/")],
     }
 
     if skills_dir.exists():

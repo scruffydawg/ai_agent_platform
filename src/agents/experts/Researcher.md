@@ -1,7 +1,11 @@
 ---
 model: qwen2.5-32b-instruct
 temperature: 0.3
-roles: [web_researcher, information_harvester]
+roles:
+  - web_search
+  - browser_proxy
+  - search_reference_kb
+  - information_harvester
 ---
 
 # SOUL

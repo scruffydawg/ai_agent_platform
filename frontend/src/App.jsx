@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import {
   Terminal, Brain, Mic, Volume2, Power, Layout, Clock, Activity,
-  Send, MessageSquare, Network, Settings, HelpCircle, Monitor, Camera, Shield, Search, Hammer, ExternalLink, Sun, Moon, Plus, Puzzle, Maximize2, Minimize2, PanelRight, Edit3, History
+  Send, MessageSquare, Network, Settings, HelpCircle, Monitor, Camera, Shield, Search, Hammer, ExternalLink, Sun, Moon, Plus, Puzzle, Maximize2, Minimize2, PanelRight, Edit3, History, Library, Box
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,6 +14,7 @@ import HelpView from './components/HelpView';
 import SystemsDashboard from './components/SwarmView';
 import SkillForge from './components/SkillForge';
 import ToolRegistry from './components/ToolRegistry';
+import KnowledgeHub from './components/KnowledgeHub';
 
 import { API_BASE, WS_BASE } from './api.js';
 
@@ -383,6 +384,7 @@ const App = () => {
           {[
             { id: 'chat', icon: MessageSquare, label: 'Observer' },
             { id: 'graph', icon: Activity, label: 'Logical Graph' },
+            { id: 'knowledge', icon: Library, label: 'Knowledge Hub' },
             { id: 'swarm', icon: Network, label: 'Systems Dashboard' },
             { id: 'registry', icon: Puzzle, label: 'Tool Registry' },
             { id: 'settings', icon: Settings, label: 'Cognition Settings' }
@@ -815,6 +817,7 @@ const App = () => {
           { activeView === 'graph' && <div className="flex-column-scroll" style={{ flex: 1, height: '100%' }}><GraphView onInfo={() => handleOpenHelp('graph')} /></div>}
           { activeView === 'swarm' && <div className="scroll-container" style={{ flex: 1 }}><SystemsDashboard /></div>}
           { activeView === 'registry' && <div className="scroll-container" style={{ flex: 1 }}><ToolRegistry /></div>}
+          { activeView === 'knowledge' && <div className="scroll-container" style={{ flex: 1 }}><KnowledgeHub /></div>}
           { activeView === 'forge' && <div className="scroll-container" style={{ flex: 1 }}><SkillForge /></div>}
           { activeView === 'settings' && <div className="scroll-container" style={{ flex: 1 }}><SettingsView onOpenHelp={handleOpenHelp} onTriggerVision={triggerVision} onManualCam={() => setShowPrivacyModal('webcam')} /></div>}
           { activeView === 'help' && <div className="scroll-container" style={{ flex: 1 }}><HelpView topic={helpTopic} onClearTopic={() => setHelpTopic(null)} /></div>}
