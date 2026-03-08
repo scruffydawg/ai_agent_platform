@@ -15,6 +15,11 @@ MEMORY_DIR = DEFAULT_STORAGE_ROOT / "data" / "memory"
 # Ensure data directories exist
 MEMORY_DIR.mkdir(parents=True, exist_ok=True)
 
+# --- SECURITY & HARDENING (Phase 1) ---
+ALLOWED_SENDERS = os.getenv("ALLOWED_SENDERS", "dave,scruffydawg").split(",")
+WEBHOOK_TOKEN = os.getenv("WEBHOOK_TOKEN", "a7f3k9xm2p1q8r4n")
+AGENT_API_KEY = os.getenv("AGENT_API_KEY", "")
+
 # --- TAILSCALE-FIRST NETWORKING PROTOCOL ---
 # Identify Tailnet nodes for standardized routing
 TAILNET_NODES = {
@@ -44,7 +49,7 @@ def resolve_target(node_key: str, default: str) -> str:
 # --- External Services (Tailscale Priority) ---
 POSTGRES_URL = os.getenv("POSTGRES_URL", f"postgresql+asyncpg://user:pass@{resolve_target('dash', 'localhost')}:5432/agent_db")
 QDRANT_URL = os.getenv("QDRANT_URL", f"http://localhost:6333")
-SEARXNG_URL = os.getenv("SEARXNG_URL", f"http://localhost:8080")
+SEARXNG_URL = os.getenv("SEARXNG_URL", f"http://localhost:8080/search")
 
 # --- LLM & Memory Settings (Tai Mae Optimized) ---
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "qwen3.5:27b") # Optimized for 24GB VRAM (RTX 3090)

@@ -42,7 +42,7 @@ const SoulNode = ({ data, id }) => (
       className="button-secondary" 
       style={{ width: '100%', fontSize: '0.65rem', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
     >
-      <Edit2 size={12} /> EDIT SOUL
+      <Zap size={12} /> REVEAL SOUL
     </button>
   </div>
 );
@@ -85,22 +85,36 @@ const SoulEditor = ({ name, onClose }) => {
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--overlay-bg)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
-      <div className="card" style={{ width: '100%', maxWidth: '800px', height: '80vh', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--overlay-bg)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', backdropFilter: 'blur(8px)' }}>
+      <div className="card glass-effect" style={{ width: '100%', maxWidth: '900px', height: '85vh', display: 'flex', flexDirection: 'column', gap: '20px', border: '1px solid var(--accent-ochre)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ color: 'var(--accent-ochre)' }}>EDITING SOUL: {name}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+             <Zap size={24} color="var(--accent-ochre)" />
+             <h2 style={{ color: 'var(--accent-ochre)', margin: 0 }}>SOUL OF {name.toUpperCase()}</h2>
+          </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer' }}><X size={24} /></button>
         </div>
-        <textarea 
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          style={{ flex: 1, background: 'var(--bg-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '20px', fontFamily: 'monospace', fontSize: '0.9rem', resize: 'none' }}
-          placeholder="Loading soul essence..."
-          disabled={loading}
-        />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px' }}>
-          <button onClick={onClose} className="button-secondary">DISCARD</button>
-          <button onClick={handleSave} className="button-primary"><Save size={18} /> CRYSTALLIZE SOUL</button>
+        
+        <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+           <div style={{ padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', borderLeft: '4px solid var(--accent-cyan)' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>IDENTITY DEEP-DIVE</span>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', margin: 0, opacity: 0.9 }}>This agent operates under the collective moral compass defined in SOUL.md, with the following specialized architecture.</p>
+           </div>
+           
+           <textarea 
+             value={content}
+             onChange={(e) => setContent(e.target.value)}
+             style={{ flex: 1, background: 'var(--bg-color)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '20px', fontFamily: 'monospace', fontSize: '0.9rem', resize: 'none', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}
+             placeholder="Synchronizing with soul essence..."
+             disabled={loading}
+           />
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', paddingTop: '10px' }}>
+           <button onClick={onClose} className="button-secondary">CLOSE RESONANCE</button>
+           <button onClick={handleSave} className="button-primary" style={{ background: 'var(--accent-ochre)', color: 'white' }}>
+             <Save size={18} /> EVOLVE SOUL
+           </button>
         </div>
       </div>
     </div>

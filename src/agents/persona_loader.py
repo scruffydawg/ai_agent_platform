@@ -8,15 +8,23 @@ class PersonaLoader:
     def __init__(self, agents_dir: str = "src/agents/experts"):
         self.agents_dir = Path(agents_dir).resolve()
         self.agents_dir.mkdir(parents=True, exist_ok=True)
+        self.base_soul_path = self.agents_dir / "SOUL.md"
 
     def load_persona(self, persona_name: str, live_learnings: str = "") -> Optional[Dict[str, Any]]:
-        """Loads and parses an .md persona file. Optionally merges live learnings."""
+        """Loads and parses an .md persona file. Optionally merges live learnings and Base Soul."""
         file_path = self.agents_dir / f"{persona_name}.md"
         if not file_path.exists():
             logger.error(f"Persona file not found: {file_path}")
             return None
 
         try:
+            # 1. Load Base Soul
+            base_soul = ""
+            if self.base_soul_path.exists():
+                with open(self.base_soul_path, "r", encoding="utf-8") as f:
+                    base_soul = f.read()
+
+            # 2. Load Specialist Soul
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
@@ -29,17 +37,33 @@ class PersonaLoader:
                     frontmatter = yaml.safe_load(parts[1])
                     body = parts[2]
 
-            # Combine for system prompt
-            system_prompt = self._generate_system_prompt(role, guidelines, memory, live_learnings)
+            # 3. Extract Sections (New "Soul" Pattern)
+            soul_identity = self._extract_section(body, "SOUL")
+            capabilities = self._extract_section(body, "CAPABILITIES")
+            constraints = self._extract_section(body, "CONSTRAINTS")
+            guidelines = self._extract_section(body, "GUIDELINES")
+            memory = self._extract_section(body, "EVOLUTIONARY MEMORY")
+            
+            # Fallbacks for legacy files
+            if not soul_identity: soul_identity = self._extract_section(body, "ROLE")
+            if not guidelines: guidelines = self._extract_section(body, "GUIDELINES")
+            if not memory: memory = self._extract_section(body, "EVOLUTIONARY MEMORY")
+
+            # 4. Generate System Prompt
+            system_prompt = self._generate_system_prompt(
+                base_soul=base_soul,
+                soul_identity=soul_identity,
+                capabilities=capabilities,
+                constraints=constraints,
+                memory=memory,
+                live_learnings=live_learnings
+            )
 
             return {
                 "name": persona_name,
                 "config": frontmatter,
-                "role": role,
-                "guidelines": guidelines,
-                "skills": skills,
-                "evolutionary_memory": memory,
-                "system_prompt": system_prompt
+                "system_prompt": system_prompt,
+                "raw_body": body
             }
         except Exception as e:
             logger.error(f"Error loading persona {persona_name}: {e}")
@@ -51,15 +75,25 @@ class PersonaLoader:
         match = re.search(pattern, body, re.MULTILINE | re.DOTALL)
         return match.group(1).strip() if match else ""
 
-    def _generate_system_prompt(self, role: str, guidelines: str, memory: str, live_learnings: str = "") -> str:
-        """Combines sections into a single system prompt."""
+    def _generate_system_prompt(self, base_soul: str, soul_identity: str, capabilities: str, constraints: str, memory: str, live_learnings: str = "") -> str:
+        """Combines sections into a single system prompt using the Soul architecture."""
         prompt = []
-        if role:
-            prompt.append(f"# ROLE\n{role}")
-        if guidelines:
-            prompt.append(f"# GUIDELINES\n{guidelines}")
         
-        # Combine static evolutionary memory with live learnings
+        # 1. Base Shared Soul (Highest Level)
+        if base_soul:
+            prompt.append(f"# BASE IDENTITY & VALUES\n{base_soul}")
+            
+        # 2. Specialist Soul
+        if soul_identity:
+            prompt.append(f"# SPECIALIST SOUL\n{soul_identity}")
+            
+        # 3. Capabilities & Constraints
+        if capabilities:
+            prompt.append(f"# CAPABILITIES\n{capabilities}")
+        if constraints:
+            prompt.append(f"# CONSTRAINTS\n{constraints}")
+        
+        # 4. Adaptive Memory (Evolutionary)
         memory_combined = []
         if memory:
             memory_combined.append(memory)

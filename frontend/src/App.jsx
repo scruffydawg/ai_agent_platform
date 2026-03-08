@@ -157,7 +157,7 @@ const App = () => {
   }, []);
 
   const handleRun = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || agentStatus === 'thinking') return;
     
     setAgentStatus('thinking');
     const userMsg = { role: 'user', content: input, id: Date.now() };

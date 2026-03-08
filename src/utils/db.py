@@ -4,6 +4,9 @@ from src.config import POSTGRES_URL
 from src.utils.logger import logger
 
 Base = declarative_base()
+
+# Import models here to register them with Base
+from src.security.models import SecurityEvent
 engine = create_async_engine(POSTGRES_URL, echo=False)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
