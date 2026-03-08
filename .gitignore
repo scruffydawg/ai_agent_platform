@@ -47,3 +47,4 @@ data/storage_map.json
 
 # Canvas Artifacts (user data)
 canvas_artifacts/
+models/
