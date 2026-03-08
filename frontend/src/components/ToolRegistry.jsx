@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Puzzle, Globe, Database, Monitor, FileText, Cpu, Eye, Mic, Speaker,
     Brain, Play, Mail, Server, Wrench, RefreshCw, Folder, Code, Save,
-    X, Activity, Zap, BookOpen, Terminal, Table2, HelpCircle
+    X, Activity, Zap, BookOpen, Terminal, Table2, HelpCircle,
+    MessageSquare, Send, ChevronUp, ChevronDown
 } from 'lucide-react';
 import { API_BASE } from '../api.js';
 
@@ -103,12 +104,11 @@ const HELP_DATA = {
 
 // ── Shared card wrapper ────────────────────────────────────────────────────────
 const SectionCard = ({ accentColor = 'var(--accent-cyan)', children, style = {} }) => (
-    <div style={{
-        background: 'var(--panel-bg)',
-        border: '1px solid var(--border-color)',
-        borderRadius: '12px',
+    <div className="glass-panel" style={{
         borderTop: `3px solid ${accentColor}`,
         overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
         ...style
     }}>
         {children}
@@ -120,7 +120,7 @@ const SectionHeader = ({ icon: Icon, title, color }) => (
         title={HELP_DATA[title] || ''}
         style={{
             padding: '14px 22px',
-            background: `rgba(0,0,0,0.12)`,
+            background: 'var(--header-bg)',
             borderBottom: '1px solid var(--border-color)',
             display: 'flex', alignItems: 'center', gap: '10px',
             cursor: 'help'
@@ -142,12 +142,12 @@ const CodeRow = ({ label, value, valueColor = 'var(--accent-cyan)' }) => (
             fontSize: '0.78rem', 
             padding: '10px 14px', 
             borderRadius: '10px', 
-            background: 'rgba(0,0,0,0.45)', 
+            background: 'var(--nav-hover-bg)', 
             color: valueColor, 
             wordBreak: 'break-all', 
             lineHeight: 1.5,
-            border: '1px solid rgba(255,255,255,0.05)',
-            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)'
+            border: '1px solid var(--border-color)',
+            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
         }}>{value}</code>
     </div>
 );
@@ -191,7 +191,7 @@ const ExecutionNodesSection = ({ methods }) => (
                     </div>
                     {/* Params + Returns footer */}
                     {(m.params?.length > 0 || m.returns) && (
-                        <div style={{ padding: '10px 20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', background: 'rgba(0,0,0,0.15)' }}>
+                        <div style={{ padding: '10px 20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', background: 'var(--header-bg)' }}>
                             {m.params?.length > 0 && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
                                     <span style={{ fontSize: '0.58rem', fontWeight: '900', color: '#EAB308', letterSpacing: '1.5px', opacity: 0.7 }}>PARAMS</span>
@@ -220,16 +220,20 @@ const ReferenceDocsSection = ({ links }) => (
     <SectionCard accentColor="var(--accent-ochre)">
         <SectionHeader icon={BookOpen} title="REFERENCE DOCS" color="var(--accent-ochre)" />
         <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {links.map((link, i) => (
+            {links.length > 0 ? links.map((link, i) => (
                 <a key={i} href={link.url} target="_blank" rel="noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', color: 'var(--accent-cyan)', textDecoration: 'none', fontSize: '0.88rem', fontWeight: '700', transition: 'background 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,255,255,0.08)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.2)'}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '8px', background: 'var(--nav-hover-bg)', color: 'var(--accent-cyan)', textDecoration: 'none', fontSize: '0.88rem', fontWeight: '700', transition: 'background 0.15s', border: '1px solid var(--border-color)' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--nav-hover-bg-hover)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--nav-hover-bg)'}
                 >
                     <Globe size={13} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
                     {link.label}
                 </a>
-            ))}
+            )) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '8px', background: 'var(--nav-hover-bg)', color: 'var(--accent-cyan)', fontSize: '0.88rem', fontWeight: '700', border: '1px solid var(--border-color)' }}>
+                    <BookOpen size={16} /> NO VALID LINK PROVIDED
+                </div>
+            )}
         </div>
     </SectionCard>
 );
@@ -240,9 +244,9 @@ const McpServersSection = ({ servers }) => (
         <SectionHeader icon={Terminal} title="MCP SERVERS IN USE" color="var(--accent-purple)" />
         <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {servers.map((srv, i) => (
-                <div key={i} style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '10px', border: '1px solid rgba(168,85,247,0.2)', overflow: 'hidden' }}>
+                <div key={i} style={{ background: 'var(--nav-hover-bg)', borderRadius: '10px', border: '1px solid var(--accent-purple)', overflow: 'hidden' }}>
                     {/* Server name header */}
-                    <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(168,85,247,0.08)', borderBottom: '1px solid rgba(168,85,247,0.15)' }}>
+                    <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--accent-purple-light)', borderBottom: '1px solid var(--accent-purple-border)' }}>
                         <Server size={14} color="var(--accent-purple)" />
                         <span style={{ fontSize: '0.85rem', fontWeight: '900', color: 'var(--accent-purple)' }}>{srv.name}</span>
                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -289,8 +293,8 @@ const CodeToolsSection = ({ tools: codeTools }) => (
         <SectionHeader icon={Code} title="CODE TOOLS & LIBRARIES" color="#EAB308" />
         <div style={{ padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {codeTools.map((ct, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(234,179,8,0.1)' }}>
-                    <div style={{ padding: '4px 6px', background: 'rgba(234,179,8,0.1)', borderRadius: '6px' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'var(--nav-hover-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ padding: '4px 6px', background: 'var(--accent-ochre-light)', borderRadius: '6px' }}>
                         <Code size={12} color="#EAB308" />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
@@ -339,7 +343,7 @@ const ApiCommandsSection = ({ calls }) => (
         <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
-                    <tr style={{ background: 'rgba(0,0,0,0.2)' }}>
+                    <tr style={{ background: 'var(--nav-hover-bg)' }}>
                         {['ACTION', 'ENDPOINT', 'NOTES'].map(h => (
                             <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: '0.6rem', fontWeight: '900', color: 'var(--accent-cyan)', letterSpacing: '1.5px', opacity: 0.7, whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
@@ -370,6 +374,10 @@ const ToolRegistry = () => {
     const [loadingSource, setLoadingSource] = useState(false);
     const [viewMode, setViewMode] = useState('visual');
     const [activeTab, setActiveTab] = useState('native'); // 'native' | 'mcp' | 'code'
+    const [consultMessages, setConsultMessages] = useState([]);
+    const [consultInput, setConsultInput] = useState('');
+    const [isConsulting, setIsConsulting] = useState(false);
+    const [isConsultOpen, setIsConsultOpen] = useState(false);
 
     const fetchTools = async () => {
         setLoading(true);
@@ -440,6 +448,116 @@ const ToolRegistry = () => {
         } catch { alert('Network error saving source.'); }
         finally { setIsSaving(false); }
     };
+
+    const handleConsult = async () => {
+        if (!consultInput.trim() || !selectedTool) return;
+        
+        const userMsg = { role: 'user', content: consultInput };
+        setConsultMessages(prev => [...prev, userMsg]);
+        setConsultInput('');
+        setIsConsulting(true);
+        
+        try {
+            const resp = await axios.post(`${API_BASE}/registry/consult`, {
+                tool_name: selectedTool.name,
+                tool_type: selectedTool.type || 'Skill',
+                tool_description: selectedTool.description,
+                tool_source: editorContent,
+                tool_metadata: {
+                    archetype: selectedTool.archetype,
+                    subtype: selectedTool.subtype,
+                    mcp_path: selectedTool.mcp_path,
+                    docs_links: selectedTool.docs_links
+                },
+                messages: [...consultMessages, userMsg]
+            });
+            
+            if (resp.data.status === 'success') {
+                setConsultMessages(prev => [...prev, { role: 'assistant', content: resp.data.response }]);
+            }
+        } catch (e) {
+            setConsultMessages(prev => [...prev, { role: 'system', content: 'Connection to Guide Consult failed.' }]);
+        }
+        setIsConsulting(false);
+    };
+
+    const ContextConsultPanel = () => (
+        <div style={{ 
+            marginTop: '20px', 
+            border: '1px solid var(--border-color)', 
+            borderRadius: '16px', 
+            overflow: 'hidden',
+            background: 'var(--header-bg)',
+            display: 'flex',
+            flexDirection: 'column',
+            maxHeight: isConsultOpen ? '400px' : '48px',
+            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: isConsultOpen ? '0 10px 25px -5px rgba(0,0,0,0.3)' : 'none'
+        }}>
+            <div 
+                onClick={() => setIsConsultOpen(!isConsultOpen)}
+                style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: 'var(--nav-hover-bg)' }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Activity size={16} color="var(--accent-cyan)" />
+                    <span style={{ fontSize: '0.75rem', fontWeight: '900', letterSpacing: '1px' }}>GUIDE CONTEXTUAL CONSULT</span>
+                </div>
+                {isConsultOpen ? <X size={16} /> : <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {consultMessages.length > 0 && <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '10px', background: 'var(--accent-cyan)', color: 'black', fontWeight: '900' }}>{consultMessages.length}</span>}
+                    <Zap size={14} className="status-pulse" color="var(--accent-cyan)" />
+                </div>}
+            </div>
+
+            {isConsultOpen && (
+                <div style={{ display: 'flex', flexDirection: 'column', height: '352px' }}>
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '15px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {consultMessages.length === 0 && (
+                            <div style={{ textAlign: 'center', marginTop: '40px', padding: '0 20px' }}>
+                                <Brain size={32} color="var(--accent-cyan)" style={{ marginBottom: '12px', opacity: 0.3 }} />
+                                <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>
+                                    Ask Guide anything about this {selectedTool.type || 'tool'}.<br/>
+                                </p>
+                                <span style={{ fontSize: '0.7rem', opacity: 0.4 }}>"How do I use this?" or "Suggest an update..."</span>
+                            </div>
+                        )}
+                        {consultMessages.map((m, i) => (
+                            <div key={i} style={{ 
+                                alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+                                maxWidth: '85%',
+                                padding: '10px 14px',
+                                borderRadius: '12px',
+                                background: m.role === 'user' ? 'var(--accent-cyan)' : 'var(--panel-bg)',
+                                color: m.role === 'user' ? 'black' : 'var(--text-primary)',
+                                fontSize: '0.82rem',
+                                border: m.role === 'assistant' ? '1px solid var(--border-color)' : 'none',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                            }}>
+                                {m.content}
+                            </div>
+                        ))}
+                        {isConsulting && (
+                            <div style={{ alignSelf: 'flex-start', padding: '10px 14px', borderRadius: '12px', background: 'var(--panel-bg)', border: '1px solid var(--border-color)' }}>
+                                <RefreshCw className="spin" size={14} />
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div style={{ padding: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '10px', background: 'var(--panel-bg)' }}>
+                        <input 
+                            value={consultInput}
+                            onChange={e => setConsultInput(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleConsult()}
+                            placeholder="Consult Guide..."
+                            style={{ flex: 1, background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.8rem', color: 'var(--text-primary)' }}
+                        />
+                        <button onClick={handleConsult} disabled={isConsulting} className="button-primary" style={{ padding: '8px' }}>
+                            <Play size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 
     const getIcon = (iconName) => {
         const icons = { browser: Globe, docker: Monitor, file: FileText, mail: Mail, drive: Database, workflow: Cpu, office: FileText, activity: Play, database: Database, eye: Eye, mic: Mic, speaker: Speaker, globe: Globe, brain: Brain, folder: Folder, code: Code };
@@ -580,7 +698,7 @@ const ToolRegistry = () => {
                     ) : (
                         <SectionCard accentColor="var(--accent-ochre)" style={{ height: '100%' }}>
                             <SectionHeader icon={Zap} title="EXECUTION NODES" color="var(--accent-ochre)" />
-                            <div style={{ padding: '40px', textAlign: 'center', opacity: 0.4, fontSize: '0.85rem', fontStyle: 'italic' }}>NONE (HANDLED VIA MCP PROTOCOL)</div>
+                            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic' }}>NONE (HANDLED VIA MCP PROTOCOL)</div>
                         </SectionCard>
                     )}
                 </div>
@@ -594,7 +712,7 @@ const ToolRegistry = () => {
                     ) : (
                         <SectionCard accentColor="var(--accent-purple)">
                             <SectionHeader icon={Terminal} title="MCP SERVERS IN USE" color="var(--accent-purple)" />
-                            <div style={{ padding: '20px', textAlign: 'center', opacity: 0.4, fontSize: '0.85rem', fontStyle: 'italic' }}>NONE DEFINED</div>
+                            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic' }}>NONE DEFINED</div>
                         </SectionCard>
                     )}
                 </div>
@@ -606,7 +724,7 @@ const ToolRegistry = () => {
                     ) : (
                         <SectionCard accentColor="#EAB308">
                             <SectionHeader icon={Code} title="CODE TOOLS & LIBRARIES" color="#EAB308" />
-                            <div style={{ padding: '20px', textAlign: 'center', opacity: 0.4, fontSize: '0.85rem', fontStyle: 'italic' }}>NONE DEFINED</div>
+                            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic' }}>NONE DEFINED</div>
                         </SectionCard>
                     )}
                 </div>
@@ -619,7 +737,7 @@ const ToolRegistry = () => {
                             <div style={{ padding: '16px 22px' }}>
                                 <p style={{ margin: 0, opacity: 0.85, fontSize: '0.9rem', lineHeight: 1.7 }}>
                                     Dynamically generated Code Tool. Raw execution code stored in{' '}
-                                    <code style={{ background: 'rgba(0,0,0,0.3)', padding: '1px 6px', borderRadius: '4px', fontSize: '0.78rem' }}>gemini_workspace/canvas_artifacts</code>.
+                                    <code style={{ background: 'var(--nav-hover-bg)', padding: '1px 6px', borderRadius: '4px', fontSize: '0.78rem' }}>gemini_workspace/canvas_artifacts</code>.
                                     Only its interface is exposed to the agent swarm.
                                 </p>
                             </div>
@@ -755,9 +873,9 @@ const ToolRegistry = () => {
                             </div>
                         </div>
                         {/* TL;DR Insight Rail */}
-                        <div style={{ 
-                            display: 'flex', gap: '24px', padding: '12px 24px', background: 'rgba(0,0,0,0.2)', 
-                            borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '20px',
+                        <div className="glass-panel" style={{ 
+                            display: 'flex', gap: '24px', padding: '12px 24px', background: 'var(--panel-bg)', 
+                            borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '20px',
                             alignItems: 'center', flexShrink: 0
                         }}>
                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -795,6 +913,8 @@ const ToolRegistry = () => {
                                 style={{ flex: 1, width: '100%', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--panel-bg)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '0.82rem', lineHeight: 1.6, resize: 'none', boxSizing: 'border-box' }}
                              />
                         )}
+
+                        <ContextConsultPanel />
                     </motion.div>
                 )}
             </AnimatePresence>

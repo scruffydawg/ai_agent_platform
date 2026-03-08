@@ -560,16 +560,13 @@ const App = () => {
 
       {/* Main Content Area */}
       <div className="main-content">
-        <header style={{ 
+        <header className="glass-panel" style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
           marginBottom: '30px', 
           alignItems: 'center',
           padding: '20px',
-          background: 'var(--header-bg)',
-          borderRadius: '16px',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--card-shadow)'
+          borderRadius: '24px'
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
             <h1 style={{ fontSize: '1.2rem', fontWeight: '900', letterSpacing: '0.5px', margin: 0 }}>
@@ -699,12 +696,12 @@ const App = () => {
                                   style={{ 
                                     alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                                     maxWidth: '96%',
-                                    background: msg.role === 'user' ? 'var(--user-bubble-bg)' : msg.content.includes('[SYSTEM ERROR]') ? 'rgba(226, 149, 120, 0.05)' : 'var(--panel-bg)',
+                                    background: msg.role === 'user' ? 'var(--user-bubble-bg)' : msg.content.includes('[SYSTEM ERROR]') ? 'rgba(226, 149, 120, 0.05)' : 'rgba(255, 255, 255, 0.03)',
                                     color: msg.role === 'user' ? 'var(--user-bubble-text)' : 'var(--text-primary)',
                                     padding: msg.role === 'user' ? '14px 18px' : '14px 40px 14px 20px',
-                                    borderRadius: '12px',
+                                    borderRadius: '18px',
                                     marginLeft: msg.role === 'user' ? 'auto' : '0',
-                                    border: msg.role === 'user' ? 'none' : msg.content.includes('[SYSTEM ERROR]') ? '1px solid var(--accent-red)' : '1px solid var(--border-color)',
+                                    border: msg.role === 'user' ? '1px solid rgba(255,255,255,0.1)' : msg.content.includes('[SYSTEM ERROR]') ? '1px solid var(--accent-red)' : '1px solid var(--glass-border)',
                                     position: 'relative',
                                     overflowWrap: 'anywhere',
                                     wordBreak: 'normal',
@@ -746,7 +743,7 @@ const App = () => {
                             </AnimatePresence>
                           </div>
                           
-                           <div className="input-container" style={{ padding: '20px 0 0 0', borderTop: '1px solid var(--border-color)' }}>
+                           <div className="input-container">
                                <textarea 
                                  ref={textareaRef}
                                  className="chat-input"

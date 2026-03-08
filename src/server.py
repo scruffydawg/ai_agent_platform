@@ -27,6 +27,8 @@ import os
 import httpx
 from pathlib import Path
 import re
+from src.routers.memory import router as memory_router
+from src.routers.registry_chat import router as registry_chat_router
 
 # Initialize Core Skills for Chat Context
 workspace_skill = FileSystemSkill(DEFAULT_STORAGE_ROOT)
@@ -88,6 +90,8 @@ app.add_middleware(
 
 # Add Routers
 app.include_router(tools_router)
+app.include_router(memory_router)
+app.include_router(registry_chat_router)
 
 class RunRequest(BaseModel):
     prompt: str

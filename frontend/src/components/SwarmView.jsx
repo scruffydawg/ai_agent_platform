@@ -28,7 +28,7 @@ const NodeCard = ({ name, data, compact }) => {
 
     return (
         <div 
-            className="card" 
+            className="glass-panel" 
             style={{ 
                 padding: compact ? '15px' : '24px', 
                 border: `1px solid ${accentColor}`,
@@ -79,7 +79,7 @@ const NodeCard = ({ name, data, compact }) => {
                         fontSize: '0.6rem', 
                         padding: '4px 8px', 
                         borderRadius: '6px', 
-                        background: isOffline ? 'rgba(0,0,0,0.2)' : 'rgba(0, 255, 255, 0.1)', 
+                        background: isOffline ? 'var(--nav-hover-bg)' : 'rgba(0, 255, 255, 0.1)', 
                         color: isOffline ? 'var(--text-secondary)' : 'var(--accent-cyan)', 
                         fontWeight: 'bold',
                         display: 'flex',
@@ -168,7 +168,7 @@ const SystemsDashboard = ({ compact = false }) => {
 
             {/* Swarm Logistics Summary */}
             {!compact && (
-                <div className="card" style={{ padding: '20px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', background: 'rgba(0, 255, 255, 0.02)', border: '1px dashed var(--border-color)', borderRadius: '16px' }}>
+                <div className="glass-panel" style={{ padding: '20px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', background: 'rgba(0, 255, 255, 0.02)', border: '1px dashed var(--border-color)', borderRadius: '16px' }}>
                     <div style={{ textAlign: 'center' }}>
                         <h4 style={{ fontSize: '0.65rem', opacity: 0.5, marginBottom: '5px', letterSpacing: '1px' }}>TOTAL AGENTS</h4>
                         <span style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--accent-cyan)' }}>12</span>

@@ -13,6 +13,18 @@ class MemoryEntry(BaseModel):
     content: str
     metadata: Optional[Dict[str, Any]] = None
 
+class LearningEntry(BaseModel):
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    fact: str
+    context: Optional[str] = None
+    relevance_score: float = 1.0
+
+class LearningMemory(BaseModel):
+    agent_id: str
+    user_patterns: List[LearningEntry] = []
+    self_patterns: List[LearningEntry] = []
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
 class AgentMemory(BaseModel):
     agent_id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -28,6 +40,9 @@ class MemoryStorage:
 
     def _get_agent_path(self, agent_id: str, format: str = "json") -> Path:
         return self.base_dir / f"{agent_id}_memory.{format}"
+
+    def _get_learning_path(self, agent_id: str) -> Path:
+        return self.base_dir / f"{agent_id}_learning.json"
 
     def save_memory(self, memory: AgentMemory, format: str = "json"):
         """Saves the AgentMemory object to disk in JSON or YAML format."""
@@ -68,3 +83,19 @@ class MemoryStorage:
             path.unlink()
             return True
         return False
+
+    def save_learning(self, learning: LearningMemory):
+        """Saves agent learning patterns to disk."""
+        path = self._get_learning_path(learning.agent_id)
+        learning.updated_at = datetime.utcnow()
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(learning.model_dump(mode="json"), f, indent=4)
+
+    def load_learning(self, agent_id: str) -> LearningMemory:
+        """Loads agent learning patterns from disk."""
+        path = self._get_learning_path(agent_id)
+        if not path.exists():
+            return LearningMemory(agent_id=agent_id)
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return LearningMemory(**data)

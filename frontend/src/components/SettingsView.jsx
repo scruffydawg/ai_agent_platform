@@ -211,7 +211,7 @@ const SettingsView = ({ onOpenHelp, onTriggerVision, onManualCam }) => {
           <Save size={18} /> SAVE CONFIGURATION
         </button>
 
-        <div className="card" style={{ marginTop: '32px', background: 'rgba(0,0,0,0.1)', border: '1px solid var(--border-color)', padding: '20px' }}>
+        <div className="card" style={{ marginTop: '32px', padding: '20px', background: 'var(--header-bg)' }}>
             <h4 style={{ fontSize: '0.9rem', marginBottom: '15px', color: 'var(--accent-ochre)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Activity size={18} /> SYSTEM PERFORMANCE & DIAGNOSTICS
             </h4>

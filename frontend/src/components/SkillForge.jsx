@@ -210,7 +210,7 @@ const SkillForge = () => {
                             return (
                                 <motion.button key={t.id} whileHover={{ scale: 1.01 }}
                                     onClick={() => { setSkillType(t.id); setStepIdx(0); }}
-                                    style={{ background: selected ? `${t.color}12` : 'rgba(0,0,0,0.15)', border: `2px solid ${selected ? t.color : 'var(--border-color)'}`, borderRadius: '12px', padding: '18px 20px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+                                    style={{ background: selected ? `${t.color}12` : 'var(--nav-hover-bg)', border: `2px solid ${selected ? t.color : 'var(--border-color)'}`, borderRadius: '12px', padding: '18px 20px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
                                 >
                                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
                                         <div style={{ padding: '10px', borderRadius: '10px', background: `${t.color}18`, border: `1px solid ${t.color}44`, flexShrink: 0 }}>
@@ -404,7 +404,7 @@ const SkillForge = () => {
                             draft.api_calls && { label: 'API CALLS', value: draft.api_calls.split('\n').filter(Boolean).length + ' defined' },
                             draft.docs_links && { label: 'DOCS LINKS', value: draft.docs_links.split('\n').filter(Boolean).length + ' links' },
                         ].filter(Boolean).map((row, i) => (
-                            <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '12px 16px', borderRadius: '8px', background: 'rgba(0,0,0,0.15)', border: '1px solid var(--border-color)' }}>
+                                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '12px 16px', borderRadius: '8px', background: 'var(--nav-hover-bg)', border: '1px solid var(--border-color)' }}>
                                 <span style={{ fontSize: '0.6rem', fontWeight: '900', color: 'var(--accent-ochre)', letterSpacing: '1.5px', minWidth: '80px', paddingTop: '2px' }}>{row.label}</span>
                                 <span style={{ fontSize: '0.85rem', opacity: 0.9, lineHeight: 1.5 }}>{row.value}</span>
                             </div>
@@ -519,7 +519,7 @@ const SkillForge = () => {
                 {/* Safety notice */}
                 <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.2)', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                     <Shield size={14} color="var(--accent-green)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <p style={{ margin: 0, fontSize: '0.72rem', opacity: 0.65, lineHeight: 1.5 }}>Skills are written to <code style={{ background: 'rgba(0,0,0,0.2)', padding: '1px 5px', borderRadius: '3px', fontSize: '0.65rem' }}>sandbox/</code> and Qdrant-indexed. Promote manually to <code style={{ background: 'rgba(0,0,0,0.2)', padding: '1px 5px', borderRadius: '3px', fontSize: '0.65rem' }}>src/skills/</code> after testing.</p>
+                    <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>Skills are written to <code style={{ background: 'var(--nav-hover-bg)', padding: '1px 5px', borderRadius: '3px', fontSize: '0.65rem' }}>sandbox/</code> and Qdrant-indexed. Promote manually to <code style={{ background: 'var(--nav-hover-bg)', padding: '1px 5px', borderRadius: '3px', fontSize: '0.65rem' }}>src/skills/</code> after testing.</p>
                 </div>
             </div>
         </div>

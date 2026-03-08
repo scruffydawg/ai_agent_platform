@@ -8,8 +8,9 @@
 This is a **self-hosted, LAN-accessible, ADHD-optimized AI Agent Platform** built from scratch. It is:
 
 - 🦾 A **multi-agent orchestration engine** (GUIDE + Expert Swarm)
+- 🧠 **Adaptive Memory** (Long-term pattern recognition & self-learning)
 - 🌐 A **web dashboard** you can access from any device on your LAN
-- 🔧 A **tool & skill registry** for managing AI capabilities
+- 🔧 A **tool & skill registry** with **Contextual Consult** AI guidance
 - 📊 A **real-time systems monitor** for your computing mesh
 - 🎨 A **canvas workspace** for code, docs, and ideas
 

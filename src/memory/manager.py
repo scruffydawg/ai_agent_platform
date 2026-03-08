@@ -1,4 +1,4 @@
-from src.memory.storage import MemoryStorage, AgentMemory, MemoryEntry
+from src.memory.storage import MemoryStorage, AgentMemory, MemoryEntry, LearningMemory, LearningEntry
 
 class MemoryManager:
     """Manages an agent's memory, handling context windows and persistence."""
@@ -10,6 +10,7 @@ class MemoryManager:
         self.storage_format = storage_format
         self.storage = MemoryStorage()
         self.llm_client = llm_client
+        self.learning = self.storage.load_learning(self.agent_id)
         
         # Try to load existing memory, otherwise initialize new
         loaded_memory = self.storage.load_memory(self.agent_id, self.storage_format)
@@ -55,6 +56,33 @@ class MemoryManager:
         """Clears current session memory and deletes the persistence file."""
         self.memory.entries = []
         self.storage.delete_memory(self.agent_id, self.storage_format)
+
+    def record_user_learn(self, fact: str, context: str = None):
+        """Records a learned pattern about the user."""
+        entry = LearningEntry(fact=fact, context=context)
+        self.learning.user_patterns.append(entry)
+        self.storage.save_learning(self.learning)
+
+    def record_self_learn(self, fact: str, context: str = None):
+        """Records a learned pattern about the agent's own behavior/tools."""
+        entry = LearningEntry(fact=fact, context=context)
+        self.learning.self_patterns.append(entry)
+        self.storage.save_learning(self.learning)
+
+    def get_learning_summary(self) -> str:
+        """Returns a string summary of learned patterns for prompt injection."""
+        summary = []
+        if self.learning.user_patterns:
+            summary.append("### LEARNED USER PATTERNS")
+            for p in self.learning.user_patterns[-5:]: # Top 5 recent
+                summary.append(f"- {p.fact}")
+        
+        if self.learning.self_patterns:
+            summary.append("### LEARNED SELF PATTERNS")
+            for p in self.learning.self_patterns[-5:]: # Top 5 recent
+                summary.append(f"- {p.fact}")
+                
+        return "\n".join(summary) if summary else ""
 
     def compress_history(self, llm_client, threshold: int = 20):
         """

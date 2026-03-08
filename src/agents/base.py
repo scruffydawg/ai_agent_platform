@@ -28,7 +28,15 @@ class BaseAgent:
              return None
              
         self.memory.add_message("user", observation)
-        messages = self.memory.get_messages()
+        
+        # Inject learned patterns into the context
+        learnings = self.memory.get_learning_summary()
+        prompt_with_learnings = self.system_prompt
+        if learnings:
+            prompt_with_learnings += f"\n\n## ADAPTIVE LEARNINGS\n{learnings}"
+            
+        messages = [{"role": "system", "content": prompt_with_learnings}]
+        messages.extend(self.memory.get_messages(limit=10)[1:]) # Avoid double system prompt
         
         # Timeout and kill switch are enforced inside the LLMClient layer
         response = self.llm.generate(messages)
@@ -71,6 +79,16 @@ class BaseAgent:
             try:
                 result = self.act(plan)
                 recovery_manager.clear_errors(self.session_id)
+                
+                # Phase 13: Extract learning insight from successful action
+                if result.get("status") == "success":
+                    insight_prompt = f"Based on the following action and result, what is a single concise fact learned about the user's preference or the environment? (Format: One sentence starting with 'The user...' or 'The system...')\n\nAction: {plan}\nResult: {result}"
+                    insight = self.llm.generate([{"role": "system", "content": "You are a learning observer."}, {"role": "user", "content": insight_prompt}])
+                    if insight:
+                        if "user" in insight.lower():
+                            self.memory.record_user_learn(insight, context=f"Action: {plan}")
+                        else:
+                            self.memory.record_self_learn(insight, context=f"Action: {plan}")
             except Exception as e:
                 error_trace = traceback.format_exc()
                 print(f"[{self.agent_id}] Tool exception caught: {e}")
