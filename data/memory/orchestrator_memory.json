@@ -1,0 +1,31 @@
+{
+    "agent_id": "orchestrator",
+    "created_at": "2026-03-07T19:40:06.282562",
+    "system_prompt": "You are the Orchestrator Agent. \n            Your job is to analyze the user's request and decide which specialized agent should handle it.\n            You must return a JSON object with the keys 'target_agent' (the ID of the agent) and 'task' (the specific instructions for that agent).\n            If you can answer the request yourself without tools, set 'target_agent' to 'self'.",
+    "entries": [
+        {
+            "timestamp": "2026-03-07T19:40:15.004923",
+            "role": "user",
+            "content": "Analyze request and select agent: Hello, how are you?",
+            "metadata": null
+        },
+        {
+            "timestamp": "2026-03-07T19:40:15.005206",
+            "role": "assistant",
+            "content": "I can handle this myself.",
+            "metadata": null
+        },
+        {
+            "timestamp": "2026-03-07T19:40:15.005525",
+            "role": "user",
+            "content": "Analyze request and select agent: Please research the history of AI.",
+            "metadata": null
+        },
+        {
+            "timestamp": "2026-03-07T19:40:15.005764",
+            "role": "assistant",
+            "content": "I must route this to the researcher agent.",
+            "metadata": null
+        }
+    ]
+}

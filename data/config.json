@@ -1,0 +1,7 @@
+{
+    "llm_url": "http://localhost:11434/v1",
+    "default_model": "qwen3.5:27b",
+    "searxng_url": "http://localhost:8080",
+    "qdrant_url": "http://localhost:6333",
+    "postgres_url": "postgresql+asyncpg://user:pass@localhost:5432/agent_db"
+}

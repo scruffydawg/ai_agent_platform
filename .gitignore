@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+env/
+*.egg
+*.env
+.env
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.local
+
+# Secrets & Keys
+.secrets
+*.pem
+*.key
+*.crt
+
+# Logs
+*.log
+backend.log
+frontend.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Data (runtime generated, not source)
+data/sessions/
+data/storage/
+data/storage_map.json
+
+# Canvas Artifacts (user data)
+canvas_artifacts/
