@@ -1,3 +1,14 @@
+# ============================================================
+# SKILL: Web Search (SearXNG)
+# ARCHETYPE: native
+# ============================================================
+# MCP_SERVERS:
+#   - None (Direct HTTP to SearXNG)
+# CODE_TOOLS:
+#   - httpx (Async HTTP client)
+# DOCS:
+#   - https://docs.searxng.org/
+# ============================================================
 import httpx
 from urllib.parse import urlparse
 from src.config import SEARXNG_URL, SEARCH_DEFAULT_REGION, SEARCH_DEFAULT_LANGUAGE, SOURCE_TIERS

@@ -9,8 +9,8 @@ class PersonaLoader:
         self.agents_dir = Path(agents_dir).resolve()
         self.agents_dir.mkdir(parents=True, exist_ok=True)
 
-    def load_persona(self, persona_name: str) -> Optional[Dict[str, Any]]:
-        """Loads and parses an .md persona file."""
+    def load_persona(self, persona_name: str, live_learnings: str = "") -> Optional[Dict[str, Any]]:
+        """Loads and parses an .md persona file. Optionally merges live learnings."""
         file_path = self.agents_dir / f"{persona_name}.md"
         if not file_path.exists():
             logger.error(f"Persona file not found: {file_path}")
@@ -29,11 +29,8 @@ class PersonaLoader:
                     frontmatter = yaml.safe_load(parts[1])
                     body = parts[2]
 
-            # Parse Standard Headers
-            role = self._extract_section(body, "Role")
-            guidelines = self._extract_section(body, "Guidelines")
-            skills = self._extract_section(body, "Skills")
-            memory = self._extract_section(body, "Evolutionary Memory")
+            # Combine for system prompt
+            system_prompt = self._generate_system_prompt(role, guidelines, memory, live_learnings)
 
             return {
                 "name": persona_name,
@@ -42,7 +39,7 @@ class PersonaLoader:
                 "guidelines": guidelines,
                 "skills": skills,
                 "evolutionary_memory": memory,
-                "system_prompt": self._generate_system_prompt(role, guidelines, memory)
+                "system_prompt": system_prompt
             }
         except Exception as e:
             logger.error(f"Error loading persona {persona_name}: {e}")
@@ -54,15 +51,24 @@ class PersonaLoader:
         match = re.search(pattern, body, re.MULTILINE | re.DOTALL)
         return match.group(1).strip() if match else ""
 
-    def _generate_system_prompt(self, role: str, guidelines: str, memory: str) -> str:
+    def _generate_system_prompt(self, role: str, guidelines: str, memory: str, live_learnings: str = "") -> str:
         """Combines sections into a single system prompt."""
         prompt = []
         if role:
-            prompt.append(f"## ROLE\n{role}")
+            prompt.append(f"# ROLE\n{role}")
         if guidelines:
-            prompt.append(f"## GUIDELINES\n{guidelines}")
+            prompt.append(f"# GUIDELINES\n{guidelines}")
+        
+        # Combine static evolutionary memory with live learnings
+        memory_combined = []
         if memory:
-            prompt.append(f"## EVOLUTIONARY MEMORY (LEARNED PATTERNS)\n{memory}")
+            memory_combined.append(memory)
+        if live_learnings:
+            memory_combined.append(live_learnings)
+            
+        if memory_combined:
+            prompt.append(f"# ADAPTIVE LEARNINGS (EVOLUTIONARY MEMORY)\n" + "\n\n".join(memory_combined))
+            
         return "\n\n".join(prompt)
 
     def list_experts(self):

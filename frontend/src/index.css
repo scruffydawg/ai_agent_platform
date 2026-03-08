@@ -169,8 +169,8 @@ body {
   background: var(--nav-hover-bg);
   color: var(--accent-ochre);
   font-weight: 800;
-  box-shadow: inset 0 0 15px rgba(184, 115, 51, 0.1);
-  border-left: 4px solid var(--accent-ochre);
+  box-shadow: 0 4px 15px rgba(212, 163, 115, 0.15);
+  border: 1px solid var(--accent-ochre);
 }
 
 .main-content {

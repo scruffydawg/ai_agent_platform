@@ -1,3 +1,14 @@
+# ============================================================
+# SKILL: File System Operations
+# ARCHETYPE: native
+# ============================================================
+# MCP_SERVERS:
+#   - None (Native Python OS calls)
+# CODE_TOOLS:
+#   - os, pathlib (Standard libraries)
+# DOCS:
+#   - https://docs.python.org/3/library/os.html
+# ============================================================
 import os
 from pathlib import Path
 from typing import Dict, Any
