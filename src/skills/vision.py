@@ -2,12 +2,31 @@ import os
 import shutil
 import base64
 import tempfile
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 from PIL import Image
 from src.utils.logger import logger
 
 class VisionSkill:
-    def __init__(self, storage_root=None):
+    """
+    Vision and Screen Capture skill on steroids.
+    
+    Use this when:
+    - You need to capture screenshots for visual debugging or analysis.
+    - You need to access the webcam for real-world visual input.
+    - You require privacy-aware buffered capture management.
+    
+    Avoid when:
+    - You only need to verify element existence in a browser (use browser skills for that).
+    - High-frequency video stream processing is required (this is for discrete frame capture).
+    """
+    def __init__(self, storage_root: Optional[str] = None):
+        """
+        Initializes the vision storage and temporary buffers.
+        
+        Args:
+            storage_root (Optional[str]): Permanent storage path. Defaults to 'data/vision'.
+        """
         self.storage_root = storage_root or "data/vision"
         fd, self.buffer_path = tempfile.mkstemp(suffix=".png", prefix="vision_buffer_")
         os.close(fd)
@@ -17,8 +36,20 @@ class VisionSkill:
         """Mock privacy scan."""
         return False
 
-    def take_screenshot(self, filename=None, force_buffer=True):
-        """Captures the entire screen. Can save to buffer or final storage."""
+    def take_screenshot(self, filename: Optional[str] = None, force_buffer: bool = True) -> Optional[Dict[str, Any]]:
+        """
+        Captures the entire primary screen.
+        
+        Args:
+            filename (Optional[str]): Desired output filename. Auto-generated if None.
+            force_buffer (bool): If True, saves to local privacy buffer first.
+            
+        Returns:
+            Optional[Dict[str, Any]]: Metadata including path and privacy results.
+            
+        Usage Example:
+            vision.take_screenshot(filename="error_state.png", force_buffer=True)
+        """
         if not filename:
             filename = f"screenshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         
@@ -61,8 +92,19 @@ class VisionSkill:
         except:
             return None
 
-    def capture_webcam(self, filename=None):
-        """Captures a frame from the default webcam."""
+    def capture_webcam(self, filename: Optional[str] = None) -> Optional[str]:
+        """
+        Captures a single frame from the default webcam device.
+        
+        Args:
+            filename (Optional[str]): Output filename (.jpg). Auto-generated if None.
+            
+        Returns:
+            Optional[str]: Absolute path to the saved image file.
+            
+        Usage Example:
+            vision.capture_webcam(filename="user_id_check.jpg")
+        """
         if not filename:
             filename = f"webcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
         

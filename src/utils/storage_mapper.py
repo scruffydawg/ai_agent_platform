@@ -21,7 +21,9 @@ class StorageMapper:
         
         directories = [
             "skills",
-            "mcp",
+            "mcp_servers",
+            "code_tools",
+            "registries",
             "docs",
             "data",
             "logs",
@@ -31,6 +33,18 @@ class StorageMapper:
         try:
             for d in directories:
                 (self.root_path / d).mkdir(parents=True, exist_ok=True)
+            
+            # Write a schema legend for the user
+            legend_path = self.root_path / "schema_legend.md"
+            if not legend_path.exists():
+                legend_path.write_text(
+                    "# Three-Pillar Storage Schema\n\n"
+                    "- **skills/**: Python files implementing actual capability logic (`src/skills/` may be aliased here).\n"
+                    "- **mcp_servers/**: Installed third-party MCP server environments (e.g. n8n-mcp, sqlite-mcp).\n"
+                    "- **code_tools/**: Reusable Python libraries, scripts, and execution node tools.\n"
+                    "- **registries/**: Lightweight JSON index files (`skills_registry.json`, `mcp_registry.json`, `code_tools_registry.json`) for LLM progressive disclosure.\n"
+                )
+
             logger.info(f"Standard AI Schema initialized at: {self.root_path}")
             return True
         except Exception as e:

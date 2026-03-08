@@ -1,6 +1,7 @@
 import time
 from typing import Optional, Dict, Any
-from src.core.state import state_manager
+import traceback
+from src.core.state import state_manager, recovery_manager
 from src.llm.client import LLMClient
 from src.memory.manager import MemoryManager
 
@@ -11,6 +12,7 @@ class BaseAgent:
     """
     def __init__(self, agent_id: str, system_prompt: str, model: str = "gpt-3.5-turbo"):
         self.agent_id = agent_id
+        self.session_id = agent_id
         self.system_prompt = system_prompt
         self.memory = MemoryManager(agent_id=agent_id, system_prompt=system_prompt)
         self.llm = LLMClient(model=model)
@@ -64,9 +66,25 @@ class BaseAgent:
                 return {"status": "error", "message": "Failed to generate plan."}
 
             if state_manager.is_halted(): return {"status": "halted"}
-
+                
             # Step 3: Act
-            result = self.act(plan)
+            try:
+                result = self.act(plan)
+                recovery_manager.clear_errors(self.session_id)
+            except Exception as e:
+                error_trace = traceback.format_exc()
+                print(f"[{self.agent_id}] Tool exception caught: {e}")
+                
+                if recovery_manager.register_error(self.session_id, str(e)):
+                    print(f"[{self.agent_id}] CIRCUIT BROKEN (Max retries reached).")
+                    return {"status": "blocked", "message": f"Circuit Broken! Escalating to human.\nError: {str(e)}", "traceback": error_trace}
+                
+                ouch_message = f"[SYSTEM ERROR] Your previous action failed with:\n{error_trace}\nPlease analyze this failure and try an alternative approach."
+                self.memory.add_message("system", ouch_message)
+                
+                current_input = ouch_message
+                loop_count += 1
+                continue
             
             # Simple break condition: if action was just to respond, we stop.
             # Complex agents might loop here if they need to fetch more data.
@@ -81,4 +99,4 @@ class BaseAgent:
              print(f"[{self.agent_id}] Max loops ({self.max_loops}) reached. Forcing exit.")
              return {"status": "max_loops_reached", "last_result": final_result}
 
-        return final_result
+        return final_result or {"status": "error", "message": "Execution loop exhausted without success"}

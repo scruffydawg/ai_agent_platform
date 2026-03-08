@@ -76,6 +76,7 @@
   
   --status-idle: #4CAF50;
   --status-thinking: #FFC107;
+  --status-recovering: var(--accent-red);
   --status-error: #F44336;
   
   color-scheme: dark;
@@ -85,7 +86,7 @@ body {
   margin: 0;
   display: flex;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   background: var(--bg-color);
 }
@@ -93,7 +94,7 @@ body {
 .app-container {
   display: flex;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   background-color: var(--bg-color);
   color: var(--text-primary);
 }
@@ -160,7 +161,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: 100vh;
+  height: 100dvh;
 }
 
 .scroll-container {
@@ -294,6 +295,7 @@ button {
 
 .status-idle .status-dot { background-color: var(--status-idle); box-shadow: 0 0 8px var(--status-idle); }
 .status-thinking .status-dot { background-color: var(--status-thinking); box-shadow: 0 0 8px var(--status-thinking); }
+.status-recovering .status-dot { background-color: var(--status-recovering); box-shadow: 0 0 8px var(--status-recovering); }
 .status-error .status-dot, .status-halted .status-dot { background-color: var(--status-error); box-shadow: 0 0 8px var(--status-error); }
 
 .action-button {

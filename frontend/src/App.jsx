@@ -699,12 +699,12 @@ const App = () => {
                                   style={{ 
                                     alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                                     maxWidth: '96%',
-                                    background: msg.role === 'user' ? 'var(--user-bubble-bg)' : 'var(--panel-bg)',
+                                    background: msg.role === 'user' ? 'var(--user-bubble-bg)' : msg.content.includes('[SYSTEM ERROR]') ? 'rgba(226, 149, 120, 0.05)' : 'var(--panel-bg)',
                                     color: msg.role === 'user' ? 'var(--user-bubble-text)' : 'var(--text-primary)',
                                     padding: msg.role === 'user' ? '14px 18px' : '14px 40px 14px 20px',
                                     borderRadius: '12px',
                                     marginLeft: msg.role === 'user' ? 'auto' : '0',
-                                    border: msg.role === 'user' ? 'none' : '1px solid var(--border-color)',
+                                    border: msg.role === 'user' ? 'none' : msg.content.includes('[SYSTEM ERROR]') ? '1px solid var(--accent-red)' : '1px solid var(--border-color)',
                                     position: 'relative',
                                     overflowWrap: 'anywhere',
                                     wordBreak: 'normal',
@@ -712,9 +712,20 @@ const App = () => {
                                   }}
                                 >
                                   <div className="markdown-body">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                      {msg.content}
-                                    </ReactMarkdown>
+                                    {msg.content && msg.content.includes('[SYSTEM ERROR]') ? (
+                                      <div style={{ padding: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-red)', fontWeight: '900', marginBottom: '10px', fontSize: '0.85rem', letterSpacing: '1px' }}>
+                                          <Activity size={16} /> RECOVERY LOOP ENGAGED
+                                        </div>
+                                        <pre style={{ margin: 0, fontSize: '0.75rem', opacity: 0.85, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', fontFamily: 'monospace', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', borderLeft: '4px solid var(--accent-red)' }}>
+                                          {msg.content.replace('[SYSTEM ERROR]', '').trim()}
+                                        </pre>
+                                      </div>
+                                    ) : (
+                                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {msg.content}
+                                      </ReactMarkdown>
+                                    )}
                                   </div>
                                   {msg.role === 'assistant' && (
                                     <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>

@@ -3,13 +3,29 @@ from src.utils.google_auth import OAuthHandler
 from src.skills.base import BaseSkill
 from src.utils.logger import logger
 import base64
+from typing import Dict, Any, List, Optional
 from email.message import EmailMessage
 
 class GmailSkill(BaseSkill):
     """
-    Skill for manifestation and management of emails in Gmail.
+    Gmail management skill on steroids.
+    
+    Use this when:
+    - You need to send high-priority emails or notifications.
+    - You need to search for and parse specific email threads (receipts, logs, etc.).
+    - You require OAuth2 authenticated access to a user's inbox.
+    
+    Avoid when:
+    - You are sending bulk marketing emails (use a dedicated transactional API).
+    - You only need to check for file updates (use Google Drive skill instead).
     """
     def __init__(self, client_secrets_file: str = "config/client_secrets.json"):
+        """
+        Initializes the Gmail service with required OAuth scopes.
+        
+        Args:
+            client_secrets_file (str): Path to the Google Cloud credentials JSON.
+        """
         # Scopes required for Gmail management
         self.scopes = ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/gmail.readonly']
         self.auth_handler = OAuthHandler(client_secrets_file, self.scopes, "gmail_token")
@@ -21,8 +37,21 @@ class GmailSkill(BaseSkill):
             self.service = build('gmail', 'v1', credentials=creds)
         return self.service
 
-    def send_message(self, to: str, subject: str, body: str):
-        """Send an email message via Gmail."""
+    async def send_message(self, to: str, subject: str, body: str) -> Optional[str]:
+        """
+        Sends a plain text email via the Gmail API.
+        
+        Args:
+            to (str): Recipient email address.
+            subject (str): Email subject line.
+            body (str): Email body content.
+            
+        Returns:
+            Optional[str]: The Gmail Message ID if successful, else None.
+            
+        Usage Example:
+            await gmail.send_message(to="user@example.com", subject="Alert", body="System down")
+        """
         try:
             service = self._get_service()
             message = EmailMessage()
