@@ -40,6 +40,18 @@ The V2 API is designed for modularity, scalability, and ease of integration. All
 -   `/api/v2/browser`: Autonomous web navigation and data extraction.
 -   `/api/v2/swarm`: Swarm telemetry and inter-agent communication.
 
+## Core System Services
+
+To ensure modular evolution, the platform is organized around these canonical services:
+
+- **SessionService**: Manages chat history and state hydration.
+- **MemoryService**: Handles long-term fact storage and pattern recognition.
+- **ApprovalService**: Manages human-in-the-loop policy gates.
+- **ConfigService**: Handles environment and runtime parameter security.
+- **SkillRegistryService**: Discovers and indexes available capabilities.
+- **RuntimeService**: Orchestrates the multi-agent graph execution.
+- **EventService**: Provides the underlying Pub/Sub event bus for UI and inter-service sync.
+
 ## Implementation Detail
 
 The V2 router is defined in `apps/api/app.py` as a master `APIRouter` that includes individual sub-routers from `apps/api/routes/` and `src/routers/`.

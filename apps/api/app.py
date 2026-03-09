@@ -12,17 +12,32 @@ from apps.api.routes.knowledge_routes import router as knowledge_router
 from apps.api.routes.forge_routes import router as forge_router
 from apps.api.routes.runtime_routes import router as runtime_router
 from apps.api.routes.approval_routes import router as approval_router
+from apps.api.routes.system_routes import router as system_router
+from src.utils.db import init_db
+from scripts.bootstrap_indexer import run_indexing
 from packages.services.event_service import event_service
 from src.utils.logger import logger
 import json
 import asyncio
 
 def create_app() -> FastAPI:
+    from contextlib import asynccontextmanager
+    
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # Startup
+        await init_db()
+        run_indexing()
+        yield
+        # Shutdown
+        pass
+
     app = FastAPI(
         title="AI Agent Platform API",
         version="2.0.0-alpha",
         docs_url="/docs",
         redoc_url="/redoc",
+        lifespan=lifespan
     )
 
     register_middleware(app)
@@ -44,9 +59,11 @@ def create_app() -> FastAPI:
     v2_router.include_router(forge_router, prefix="/forge", tags=["forge"])
     v2_router.include_router(runtime_router, prefix="/runtime", tags=["runtime"])
     v2_router.include_router(approval_router, prefix="/approvals", tags=["approvals"])
+    v2_router.include_router(system_router, prefix="/system", tags=["system"])
 
     # Include Tool Registry from src.routers
-    from src.routers.tools import router as tools_router
+    # Include Tool Registry from V2 routes
+    from apps.api.routes.tools_routes import router as tools_router
     v2_router.include_router(tools_router, tags=["tools"])
 
     app.include_router(v2_router)
@@ -54,11 +71,13 @@ def create_app() -> FastAPI:
     # Compatibility Aliases (V1 -> V2) - Root level
     app.include_router(health_router, tags=["legacy"])
     app.include_router(swarm_router, prefix="/swarm", tags=["legacy"])
+    app.include_router(system_router, tags=["legacy"])
+    app.include_router(session_router, tags=["legacy"])
     
     @app.post("/chat", tags=["legacy"])
     async def legacy_chat(request: Request):
         from apps.api.routes.runtime_routes import chat
-        return await chat(await request.json()) # Simplification, better to call service directly
+        return await chat(await request.json())
     
     @app.post("/run", tags=["legacy"])
     async def legacy_run(request: Request):
@@ -66,8 +85,11 @@ def create_app() -> FastAPI:
         from apps.api.routes.runtime_routes import RunRequest
         body = await request.json()
         return await run_graph(RunRequest(**body))
-
-    # ... and so on for other critical UI endpoints
+    
+    @app.post("/canvas/event", tags=["legacy"])
+    async def legacy_canvas_event(request: Request):
+        from apps.api.routes.system_routes import push_canvas_event
+        return await push_canvas_event(request)
     async def root() -> dict:
         return {
             "name": "AI Agent Platform API",
@@ -91,10 +113,15 @@ def create_app() -> FastAPI:
         event_service.subscribe(on_event)
         
         try:
-            # Send initial heartbeat
-            await websocket.send_text(json.dumps({"type": "heartbeat", "status": "connected"}))
+            # Send initial heartbeat with system status
+            await websocket.send_text(json.dumps({
+                "type": "heartbeat", 
+                "status": "connected",
+                "halted": False # Should be synced with state_manager
+            }))
             while True:
-                await websocket.receive_text() # Keep alive
+                # Keep alive and handle incoming (if any)
+                await websocket.receive_text()
         except WebSocketDisconnect:
             logger.info("WebSocket disconnected")
         finally:

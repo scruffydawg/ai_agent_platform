@@ -18,9 +18,9 @@ All successful requests return a `SuccessResponse`:
 ## Endpoints
 
 ### 🩺 Health & Monitoring
-`GET /health`
+`GET /health` | `GET /health/ready` | `GET /health/live`
 - **Description**: Returns system health status and version info.
-- **Success Data**: `{"status": "healthy", "version": "2.0.0", "uptime": "..."}`
+- **Success Data**: `{"status": "healthy", "version": "2.0.0-alpha", "uptime": "..."}`
 
 ### ⚙️ Configuration
 `GET /config/`
@@ -64,3 +64,17 @@ All successful requests return a `SuccessResponse`:
 - **Description**: Primary endpoint for agent interaction and graph execution.
 - **Request Body**: `{"prompt": "...", "history": []}`
 - **Response**: Server-Sent Events (SSE) stream.
+
+## 📡 Event Bus Schema
+
+The platform utilizes a standardized event model for communication between the Runtime and the UI components.
+
+| Event Type | Description | Payload Detail |
+|---|---|---|
+| `run.started` | Execution instance initialized | `run_id`, `timestamp`, `trigger` |
+| `run.planned` | Multi-node strategy generated | `plan_steps`, `depth` |
+| `step.started` | Individual node process began | `node_id`, `state_snapshot` |
+| `step.completed` | Node processing finished | `output`, `metrics` |
+| `tool.requested` | Agent requested external action | `tool_name`, `arguments`, `needs_approval` |
+| `approval.requested`| Policy gate blocking execution | `approval_id`, `capability`, `reason` |
+| `memory.persisted` | Long-term learning event | `fact`, `relevance_score` |
