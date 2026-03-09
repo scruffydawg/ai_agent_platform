@@ -69,7 +69,8 @@ class SkillBuilderAgent(BaseAgent):
 
         loop = asyncio.get_event_loop()
         plan = await loop.run_in_executor(None, self.reason, observation)
-        
+        if not plan:
+            return {"status": "error", "message": "Failed to generate plan"}
         cleaned_plan = plan.replace("```json", "").replace("```", "").strip()
         try:
             return json.loads(cleaned_plan)

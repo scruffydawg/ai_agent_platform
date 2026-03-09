@@ -3,9 +3,11 @@ from typing import Optional, List, Dict, Any
 import time
 from src.memory.knowledge_base import kb_manager
 
+from apps.api.response_models import SuccessResponse
+
 router = APIRouter()
 
-@router.post("/upload")
+@router.post("/upload", response_model=SuccessResponse)
 async def upload_knowledge(file: UploadFile = File(...), category: str = "general"):
     try:
         content = await file.read()
@@ -17,13 +19,13 @@ async def upload_knowledge(file: UploadFile = File(...), category: str = "genera
         }
         success = await kb_manager.ingest_document(text, metadata)
         if success:
-            return {"status": "success", "filename": file.filename}
+            return SuccessResponse(data={"filename": file.filename}, message="Ingestion successful")
         else:
             raise HTTPException(status_code=500, detail="Ingestion failed")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/search")
+@router.get("/search", response_model=SuccessResponse)
 async def search_knowledge(q: str):
     results = await kb_manager.search_reference(q)
-    return {"results": results}
+    return SuccessResponse(data=results)

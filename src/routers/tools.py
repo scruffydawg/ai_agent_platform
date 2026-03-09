@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 
 from src.config import DEFAULT_STORAGE_ROOT
+from apps.api.response_models import SuccessResponse
 
 router = APIRouter(prefix="/tools", tags=["tools"])
 
@@ -243,7 +244,7 @@ N8N_SAMPLE_CALLS = [
 
 # ── Registry Scan ────────────────────────────────────────────────────────────
 
-@router.get("/registry", response_model=List[ToolCapability])
+@router.get("/registry", response_model=SuccessResponse)
 async def get_tool_registry():
     """Dynamically scans src/skills for available AI Agent Skill files."""
     skills_dir = Path("src/skills")
@@ -488,7 +489,7 @@ async def get_tool_registry():
     except Exception as e:
         print(f"Error writing JSON registries: {e}")
 
-    return registry
+    return SuccessResponse(data=registry)
 
 
 # ── Fetch JSON Registries (Phase 9) ──────────────────────────────────────────

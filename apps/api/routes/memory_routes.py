@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from packages.services.memory_service import memory_service
 
+from apps.api.response_models import SuccessResponse
+
 router = APIRouter()
 
 class LearnRequest(BaseModel):
@@ -11,11 +13,12 @@ class LearnRequest(BaseModel):
     context: Optional[str] = None
     is_user_pattern: bool = True
 
-@router.get("/{agent_id}/learnings")
+@router.get("/{agent_id}/learnings", response_model=SuccessResponse)
 async def get_learnings(agent_id: str):
-    return memory_service.get_learnings(agent_id)
+    data = memory_service.get_learnings(agent_id)
+    return SuccessResponse(data=data)
 
-@router.post("/{agent_id}/learn")
+@router.post("/{agent_id}/learn", response_model=SuccessResponse)
 async def add_learning(agent_id: str, req: LearnRequest):
     memory_service.record_learning(
         agent_id=agent_id,
@@ -23,9 +26,9 @@ async def add_learning(agent_id: str, req: LearnRequest):
         context=req.context,
         is_user=req.is_user_pattern
     )
-    return {"status": "success", "message": "Learning recorded."}
+    return SuccessResponse(message="Learning recorded")
 
-@router.delete("/{agent_id}/learnings")
+@router.delete("/{agent_id}/learnings", response_model=SuccessResponse)
 async def clear_learnings(agent_id: str):
     memory_service.reset_learnings(agent_id)
-    return {"status": "success", "message": "Learnings reset."}
+    return SuccessResponse(message="Learnings reset")

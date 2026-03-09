@@ -11,7 +11,9 @@ from apps.api.routes.swarm_routes import router as swarm_router
 from apps.api.routes.knowledge_routes import router as knowledge_router
 from apps.api.routes.forge_routes import router as forge_router
 from apps.api.routes.runtime_routes import router as runtime_router
-from packages.runtime.orchestration.event_bus import event_bus
+from apps.api.routes.approval_routes import router as approval_router
+from packages.services.event_service import event_service
+from src.utils.logger import logger
 import json
 import asyncio
 
@@ -25,20 +27,34 @@ def create_app() -> FastAPI:
 
     register_middleware(app)
 
-    # Core Routes
-    app.include_router(health_router, tags=["health"])
-    app.include_router(config_router, prefix="/config", tags=["config"])
-    app.include_router(session_router, prefix="/sessions", tags=["sessions"])
-    app.include_router(memory_router, prefix="/memory", tags=["memory"])
-    app.include_router(vision_router, prefix="/vision", tags=["vision"])
-    app.include_router(browser_router, prefix="/browser", tags=["browser"])
-    app.include_router(voice_router, prefix="/voice", tags=["voice"])
-    app.include_router(swarm_router, prefix="/swarm", tags=["swarm"])
-    app.include_router(knowledge_router, prefix="/knowledge", tags=["knowledge"])
-    app.include_router(forge_router, prefix="/forge", tags=["forge"])
-    app.include_router(runtime_router, prefix="/runtime", tags=["runtime"])
+    # V2 API Router
+    from fastapi import APIRouter
+    v2_router = APIRouter(prefix="/api/v2")
 
-    # Compatibility Aliases (V1 -> V2)
+    # Core Routes (V2)
+    v2_router.include_router(health_router, tags=["health"])
+    v2_router.include_router(config_router, prefix="/config", tags=["config"])
+    v2_router.include_router(session_router, prefix="/sessions", tags=["sessions"])
+    v2_router.include_router(memory_router, prefix="/memory", tags=["memory"])
+    v2_router.include_router(vision_router, prefix="/vision", tags=["vision"])
+    v2_router.include_router(browser_router, prefix="/browser", tags=["browser"])
+    v2_router.include_router(voice_router, prefix="/voice", tags=["voice"])
+    v2_router.include_router(swarm_router, prefix="/swarm", tags=["swarm"])
+    v2_router.include_router(knowledge_router, prefix="/knowledge", tags=["knowledge"])
+    v2_router.include_router(forge_router, prefix="/forge", tags=["forge"])
+    v2_router.include_router(runtime_router, prefix="/runtime", tags=["runtime"])
+    v2_router.include_router(approval_router, prefix="/approvals", tags=["approvals"])
+
+    # Include Tool Registry from src.routers
+    from src.routers.tools import router as tools_router
+    v2_router.include_router(tools_router, tags=["tools"])
+
+    app.include_router(v2_router)
+
+    # Compatibility Aliases (V1 -> V2) - Root level
+    app.include_router(health_router, tags=["legacy"])
+    app.include_router(swarm_router, prefix="/swarm", tags=["legacy"])
+    
     @app.post("/chat", tags=["legacy"])
     async def legacy_chat(request: Request):
         from apps.api.routes.runtime_routes import chat
@@ -66,9 +82,13 @@ def create_app() -> FastAPI:
         
         # Subscribe to EventBus
         async def on_event(event):
-            await websocket.send_text(json.dumps(event))
+            try:
+                await websocket.send_text(json.dumps(event))
+            except Exception:
+                # If sending fails, we should probably stop the subscription
+                pass
             
-        event_bus.subscribe(on_event)
+        event_service.subscribe(on_event)
         
         try:
             # Send initial heartbeat
@@ -76,8 +96,9 @@ def create_app() -> FastAPI:
             while True:
                 await websocket.receive_text() # Keep alive
         except WebSocketDisconnect:
-            # In a real app, we'd unsubscribe
-            pass
+            logger.info("WebSocket disconnected")
+        finally:
+            event_service.unsubscribe(on_event)
 
     return app
 
