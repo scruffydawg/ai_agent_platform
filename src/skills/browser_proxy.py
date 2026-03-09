@@ -38,13 +38,20 @@ class BrowserProxy:
                 text = '\n'.join(chunk for chunk in chunks if chunk)
 
                 return {
-                    "url": url,
-                    "title": soup.title.string.strip() if soup.title else "Untitled Page",
-                    "content": text[:10000] # Limit to 10k chars for reasonable context window
+                    "status": "success",
+                    "data": {
+                        "url": url,
+                        "title": soup.title.string.strip() if soup.title else "Untitled Page",
+                        "content": text[:10000] # Limit to 10k chars for reasonable context window
+                    }
                 }
 
         except Exception as e:
             logger.error(f"BrowserProxy Error on {url}: {e}")
-            return {"url": url, "title": "Error", "content": f"Failed to load page: {str(e)}"}
+            return {
+                "status": "error",
+                "message": f"Failed to load page: {str(e)}",
+                "data": {"url": url}
+            }
 
 browser_proxy = BrowserProxy()

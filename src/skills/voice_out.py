@@ -23,19 +23,19 @@ class VoiceOutSkill:
             return True
         return True
 
-    def speak(self, text: str, voice: str = "af_heart") -> bytes:
+    def speak(self, text: str, voice: str = "af_heart") -> Dict[str, Any]:
         """Generates audio bytes from text."""
         if not self._load_model():
-            return b""
+            return {"status": "error", "message": "TTS model not loaded"}
             
         try:
             # Kokoro generates a tuple of (samples, sample_rate)
             samples, sample_rate = self.kokoro.create(text, voice=voice, speed=1.0, lang="en-us")
             # In a real app we might return the wav file or raw bytes
-            return samples.tobytes()
+            return {"status": "success", "data": {"audio": samples.tobytes(), "sample_rate": sample_rate}, "message": "Speech generated"}
         except Exception as e:
             logger.error(f"TTS Error: {e}")
-            return b""
+            return {"status": "error", "message": str(e)}
 
 # Singleton for reuse
 voice_tts = VoiceOutSkill()

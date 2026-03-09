@@ -10,9 +10,9 @@
             "data": {
                 "label": "SOUL"
             },
-            "width": 200,
-            "height": 157,
-            "selected": true,
+            "width": 140,
+            "height": 102,
+            "selected": false,
             "dragging": false
         },
         {
@@ -20,13 +20,19 @@
             "type": "soul",
             "position": {
                 "x": 250,
-                "y": 0
+                "y": -1.021770682148059
             },
             "data": {
                 "label": "Architect"
             },
-            "width": 200,
-            "height": 157
+            "width": 140,
+            "height": 102,
+            "selected": true,
+            "positionAbsolute": {
+                "x": 250,
+                "y": -1.021770682148059
+            },
+            "dragging": false
         },
         {
             "id": "Coder",
@@ -38,8 +44,8 @@
             "data": {
                 "label": "Coder"
             },
-            "width": 200,
-            "height": 157
+            "width": 140,
+            "height": 102
         },
         {
             "id": "Security",
@@ -51,8 +57,8 @@
             "data": {
                 "label": "Security"
             },
-            "width": 200,
-            "height": 157
+            "width": 140,
+            "height": 102
         },
         {
             "id": "ADHD_UX",
@@ -64,8 +70,8 @@
             "data": {
                 "label": "ADHD_UX"
             },
-            "width": 200,
-            "height": 157
+            "width": 140,
+            "height": 102
         },
         {
             "id": "Analyst",
@@ -77,8 +83,8 @@
             "data": {
                 "label": "Analyst"
             },
-            "width": 200,
-            "height": 157
+            "width": 140,
+            "height": 102
         },
         {
             "id": "Observer",
@@ -90,25 +96,25 @@
             "data": {
                 "label": "Observer"
             },
-            "width": 200,
-            "height": 157
+            "width": 140,
+            "height": 102
         },
         {
             "id": "Researcher",
             "type": "soul",
             "position": {
-                "x": 268.4397677793904,
-                "y": 93.78809869375903
+                "x": 238.80841799709725,
+                "y": 403.8955007256894
             },
             "data": {
                 "label": "Researcher"
             },
-            "width": 200,
-            "height": 157,
+            "width": 140,
+            "height": 102,
             "selected": false,
             "positionAbsolute": {
-                "x": 268.4397677793904,
-                "y": 93.78809869375903
+                "x": 238.80841799709725,
+                "y": 403.8955007256894
             },
             "dragging": false
         }

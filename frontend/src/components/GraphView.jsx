@@ -16,53 +16,69 @@ import { API_BASE } from '../api.js';
 
 const SoulNode = ({ data, id }) => (
   <motion.div 
-    whileHover={{ y: -5, scale: 1.02 }}
+    whileHover={{ y: -2, scale: 1.05 }}
     className="card glass-panel" 
     style={{ 
-      padding: '16px', 
-      background: 'var(--panel-bg)', 
-      border: '1px solid var(--border-color)', 
-      borderRadius: '20px', 
-      width: '200px',
+      padding: '12px', 
+      background: 'rgba(20, 20, 20, 0.4)', 
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      border: '1px solid rgba(212, 163, 115, 0.3)', 
+      borderRadius: '16px', 
+      width: '140px',
       position: 'relative',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
-      overflow: 'hidden'
+      boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px'
     }}
   >
-    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, transparent, var(--accent-ochre), transparent)', opacity: 0.5 }}></div>
+    <Handle type="target" position={Position.Top} style={{ background: 'var(--accent-cyan)', border: 'none', width: '6px', height: '6px' }} />
+    <Handle type="source" position={Position.Bottom} style={{ background: 'var(--accent-cyan)', border: 'none', width: '6px', height: '6px' }} />
     
-    <Handle type="target" position={Position.Top} style={{ background: 'var(--accent-cyan)', border: 'none', width: '8px', height: '8px' }} />
-    <Handle type="source" position={Position.Bottom} style={{ background: 'var(--accent-cyan)', border: 'none', width: '8px', height: '8px' }} />
-    
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
-      <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(212, 163, 115, 0.1)', display: 'flex' }}>
-        <Zap size={18} color="var(--accent-ochre)" />
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <span style={{ fontWeight: '900', fontSize: '0.95rem', color: 'var(--text-primary)', letterSpacing: '0.5px' }}>{data.label.toUpperCase()}</span>
-        <span style={{ fontSize: '0.65rem', color: 'var(--accent-ochre)', fontWeight: 'bold' }}>ACTIVE SOUL</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', maxWidth: '85%' }}>
+        <Zap size={14} color="var(--accent-ochre)" style={{ flexShrink: 0 }} />
+        <span style={{ fontWeight: '800', fontSize: '0.75rem', color: 'var(--text-primary)', letterSpacing: '0.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={data.label}>{data.label.toUpperCase()}</span>
       </div>
       <button 
-        onClick={(e) => { e.stopPropagation(); data.onDelete(data.label); }}
-        style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', opacity: 0.5 }}
-        onMouseOver={(e) => e.target.style.opacity = 1}
-        onMouseOut={(e) => e.target.style.opacity = 0.5}
+        onClick={(e) => { e.stopPropagation(); data.onDelete && data.onDelete(data.label); }}
+        style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px', opacity: 0.6 }}
+        onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+        onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
         title="Dissolve Expert"
       >
-        <X size={16} />
+        <X size={12} />
       </button>
     </div>
     
-    <p style={{ fontSize: '0.75rem', lineHeight: '1.4', opacity: 0.8, marginBottom: '20px', color: 'var(--text-primary)', fontStyle: 'italic' }}>
-      "{data.role || 'Dedicated Swarm Specialist'}"
+    <p style={{ fontSize: '0.65rem', lineHeight: '1.2', opacity: 0.7, margin: 0, color: 'var(--text-primary)' }}>
+      {data.role || 'Swarm Specialist'}
     </p>
     
     <button 
-      onClick={() => data.onEdit(data.label)}
-      className="action-button" 
-      style={{ width: '100%', justifyContent: 'center', background: 'rgba(212, 163, 115, 0.05)', color: 'var(--accent-ochre)', border: '1px solid rgba(212, 163, 115, 0.2)' }}
+      onClick={() => data.onEdit && data.onEdit(data.label)}
+      style={{ 
+        marginTop: '4px',
+        padding: '6px',
+        fontSize: '0.65rem',
+        fontWeight: 'bold',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '4px',
+        background: 'rgba(212, 163, 115, 0.1)', 
+        color: 'var(--accent-ochre)', 
+        border: '1px solid rgba(212, 163, 115, 0.2)',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        transition: 'all 0.2s'
+      }}
+      onMouseOver={(e) => e.currentTarget.style.background = 'rgba(212, 163, 115, 0.2)'}
+      onMouseOut={(e) => e.currentTarget.style.background = 'rgba(212, 163, 115, 0.1)'}
     >
-      <Sparkles size={14} /> REVEAL SOUL
+      <Sparkles size={10} /> REVEAL
     </button>
   </motion.div>
 );
@@ -367,13 +383,6 @@ const GraphView = () => {
     setNodes((nds) => nds.filter(node => node.id !== id));
   }, [setNodes]);
 
-  const nodesWithCallbacks = nodes.map(node => {
-    if (node.type === 'soul') {
-        return { ...node, data: { ...node.data, onEdit: (n) => setEditingSoul(n), onDelete: handleDeleteExpert } };
-    }
-    return node;
-  });
-
   const onConnect = useCallback((params) => {
     setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: 'var(--accent-cyan)', strokeWidth: 2 } }, eds));
   }, [setEdges]);
@@ -397,7 +406,7 @@ const GraphView = () => {
         {editingSoul && <SoulEditor name={editingSoul} onClose={() => setEditingSoul(null)} />}
       </AnimatePresence>
       <ReactFlow
-        nodes={nodesWithCallbacks}
+        nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -407,18 +416,22 @@ const GraphView = () => {
       >
         <Background variant="dots" gap={20} size={1} color="rgba(212, 163, 115, 0.05)" />
       </ReactFlow>
-      <div style={{ position: 'absolute', top: '25px', left: '25px', zIndex: 1000, background: 'var(--panel-bg)', backdropFilter: 'blur(10px)', padding: '12px 20px', borderRadius: '16px', fontSize: '0.85rem', border: '1px solid var(--glass-border)', boxShadow: 'var(--card-shadow)', display: 'flex', alignItems: 'center', gap: '20px' }}>
+      <div style={{ position: 'absolute', top: '25px', left: '25px', zIndex: 1000, background: 'rgba(20, 20, 20, 0.6)', backdropFilter: 'blur(16px)', padding: '16px 24px', borderRadius: '16px', fontSize: '0.85rem', border: '1px solid rgba(212, 163, 115, 0.3)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '400px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Activity size={18} color="var(--accent-cyan)" />
-          <span style={{ fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '1.5px' }}>SWARM EVOLUTION</span>
+          <Activity size={20} color="var(--accent-cyan)" />
+          <span style={{ fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '1.5px', fontSize: '1rem' }}>SWARM EVOLUTION (LOGICAL GRAPH)</span>
         </div>
-        <div style={{ width: '1px', height: '20px', background: 'var(--border-color)' }}></div>
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.75rem', lineHeight: '1.4' }}>
+          This visual editor allows you to build and manage your AI Agent Swarm. 
+          Spawn specialized experts, view their relationships, and click "REVEAL" to edit their underlying prompts and "souls".
+        </p>
+        <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
         <button 
           onClick={(e) => { e.stopPropagation(); handleSpawnExpert(); }}
           className="action-button"
-          style={{ padding: '8px 16px', background: 'var(--accent-translucent)', border: '1px solid var(--accent-ochre)', color: 'var(--accent-ochre)' }}
+          style={{ padding: '10px 16px', background: 'var(--accent-translucent)', border: '1px solid var(--accent-ochre)', color: 'var(--accent-ochre)', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', borderRadius: '8px', fontWeight: 'bold' }}
         >
-          <Plus size={16} /> <span>SPAWN EXPERT</span>
+          <Plus size={16} /> SPAWN NEW EXPERT
         </button>
       </div>
     </div>

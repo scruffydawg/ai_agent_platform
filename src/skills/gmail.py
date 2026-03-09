@@ -37,21 +37,8 @@ class GmailSkill(BaseSkill):
             self.service = build('gmail', 'v1', credentials=creds)
         return self.service
 
-    async def send_message(self, to: str, subject: str, body: str) -> Optional[str]:
-        """
-        Sends a plain text email via the Gmail API.
-        
-        Args:
-            to (str): Recipient email address.
-            subject (str): Email subject line.
-            body (str): Email body content.
-            
-        Returns:
-            Optional[str]: The Gmail Message ID if successful, else None.
-            
-        Usage Example:
-            await gmail.send_message(to="user@example.com", subject="Alert", body="System down")
-        """
+    async def send_message(self, to: str, subject: str, body: str) -> Dict[str, Any]:
+        """Sends a plain text email via the Gmail API."""
         try:
             service = self._get_service()
             message = EmailMessage()
@@ -64,13 +51,14 @@ class GmailSkill(BaseSkill):
             create_message = {'raw': encoded_message}
             
             send_result = service.users().messages().send(userId="me", body=create_message).execute()
-            logger.info(f"Message sent. ID: {send_result.get('id')}")
-            return send_result.get('id')
+            msg_id = send_result.get('id')
+            logger.info(f"Message sent. ID: {msg_id}")
+            return {"status": "success", "message": f"Email sent to {to}", "data": {"message_id": msg_id}}
         except Exception as e:
             logger.error(f"Failed to send Gmail: {e}")
-            return None
+            return {"status": "error", "message": str(e)}
 
-    def list_messages(self, limit: int = 10):
+    def list_messages(self, limit: int = 10) -> Dict[str, Any]:
         """List the IDs and snippets of the latest messages."""
         try:
             service = self._get_service()
@@ -81,16 +69,18 @@ class GmailSkill(BaseSkill):
             for msg in messages:
                 txt = service.users().messages().get(userId='me', id=msg['id']).execute()
                 snippets.append({"id": msg['id'], "snippet": txt['snippet']})
-            return snippets
+            return {"status": "success", "data": {"messages": snippets}}
         except Exception as e:
             logger.error(f"Failed to list Gmail messages: {e}")
-            return []
+            return {"status": "error", "message": str(e), "data": {"messages": []}}
 
-    def execute(self, params: dict):
-        action = params.get("action")
+    def run(self, action: str, **kwargs) -> Dict[str, Any]:
         if action == "send":
-            return self.send_message(params.get("to"), params.get("subject"), params.get("body"))
+            import asyncio
+            return asyncio.run(self.send_message(kwargs.get("to"), kwargs.get("subject"), kwargs.get("body")))
         elif action == "list":
-            return self.list_messages(params.get("limit", 10))
+            return self.list_messages(kwargs.get("limit", 10))
         else:
-            return {"error": "Unknown action"}
+            return {"status": "error", "message": f"Unknown action: {action}"}
+
+gmail_skill = GmailSkill()

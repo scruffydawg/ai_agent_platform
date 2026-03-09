@@ -209,7 +209,9 @@ const App = () => {
               if (!cleanedLine) continue;
               const data = JSON.parse(cleanedLine);
               if (data.content) {
-                assistantReply += data.content;
+                // Ensure literal "\n" strings that survived JSON parsing are real newlines for Markdown
+                const parsedContent = data.content.replace(/\\n/g, '\n');
+                assistantReply += parsedContent;
                 setMessages(prev => prev.map(m => 
                   m.id === assistantMsgId ? { ...m, content: assistantReply } : m
                 ));
@@ -593,6 +595,20 @@ const App = () => {
                   <span style={{ fontSize: '0.7rem' }}>CANVAS</span>
                 </button>
 
+                {showCanvas && !showDashboardOverlay && (
+                  <button 
+                    onClick={() => setCanvasSplitIndex(prev => {
+                      if (prev >= 5) return 1;
+                      return prev + 1;
+                    })}
+                    className="action-button"
+                    style={{ border: '1px solid var(--accent-ochre)', color: 'var(--accent-ochre)', minWidth: '60px' }}
+                    title="Cycle Layout Split"
+                  >
+                    <span style={{ fontSize: '0.7rem', fontWeight: '900' }}>{['COLLAPSED', '25%', '50%', '60%', '75%', '100%'][canvasSplitIndex]}</span>
+                  </button>
+                )}
+
                 <button 
                   onClick={toggleTheme} 
                   className="action-button"
@@ -658,6 +674,7 @@ const App = () => {
                   { label: '75 / 25', chat: '75%', canvas: '25%' },
                   { label: '50 / 50', chat: '50%', canvas: '50%' },
                   { label: '40 / 60', chat: '40%', canvas: '60%' },
+                  { label: '25 / 75', chat: '25%', canvas: '75%' },
                   { label: '100%', chat: '0%', canvas: '100%' },
                 ];
                 // default to 75/25 if index is out of bounds (it shouldn't be)
@@ -778,34 +795,13 @@ const App = () => {
                     {/* Canvas Panel */}
                     {showCanvas && (
                       <div className="canvas-sidebar" style={{ width: canvasWidth, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', transition: 'width 0.3s ease' }}>
-                         <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 100, display: 'flex', alignItems: 'center', background: 'var(--header-bg)', padding: '4px 8px', borderRadius: '12px', border: '1px solid var(--border-color)', backdropFilter: 'blur(10px)', visibility: canvasSplitIndex === 0 ? 'hidden' : 'visible' }}>
-                           <select 
-                             value={canvasSplitIndex}
-                             onChange={(e) => setCanvasSplitIndex(Number(e.target.value))}
-                             style={{
-                               background: 'transparent',
-                               border: 'none',
-                               color: 'var(--text-primary)',
-                               fontSize: '0.75rem',
-                               fontWeight: '900',
-                               outline: 'none',
-                               cursor: 'pointer'
-                             }}
-                             title="Select Canvas Split Ratio"
-                           >
-                             <option value={0} style={{ background: 'var(--bg-color)' }}>Collapsed</option>
-                             <option value={1} style={{ background: 'var(--bg-color)' }}>75/25 (Chat/Canvas)</option>
-                             <option value={2} style={{ background: 'var(--bg-color)' }}>50/50 Split</option>
-                             <option value={3} style={{ background: 'var(--bg-color)' }}>40/60 (Chat/Canvas)</option>
-                             <option value={4} style={{ background: 'var(--bg-color)' }}>100% (Canvas Only)</option>
-                           </select>
-                         </div>
-                        <CanvasPanel 
-                          showFull={chatWidth === '0%'} 
-                          isCollapsed={canvasSplitIndex === 0}
-                          onRestore={() => setCanvasSplitIndex(1)}
-                          onToggleFull={() => setCanvasSplitIndex(canvasSplitIndex === 4 ? 2 : 4)} 
-                        />
+                         <CanvasPanel 
+                           showFull={chatWidth === '0%'} 
+                           isCollapsed={canvasSplitIndex === 0}
+                           isSmall={canvasSplitIndex === 1 || canvasSplitIndex === 2}
+                           onRestore={() => setCanvasSplitIndex(1)}
+                           onToggleFull={() => setCanvasSplitIndex(canvasSplitIndex === 5 ? 2 : 5)} 
+                         />
                       </div>
                     )}
                   </div>

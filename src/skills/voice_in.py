@@ -17,16 +17,16 @@ class VoiceInSkill:
             # Run on CPU by default for portability, or GPU if available
             self.model = WhisperModel(self.model_size, device="cpu", compute_type="int8")
 
-    def transcribe(self, audio_path: str) -> str:
+    def transcribe(self, audio_path: str) -> Dict[str, Any]:
         """Transcribes a local audio file to text."""
         self._load_model()
         try:
             segments, info = self.model.transcribe(audio_path, beam_size=1)
             text = " ".join([segment.text for segment in segments])
-            return text.strip()
+            return {"status": "success", "data": {"text": text.strip()}, "message": "Transcription complete"}
         except Exception as e:
             logger.error(f"STT Error: {e}")
-            return f"Error transcribing audio: {e}"
+            return {"status": "error", "message": f"Error transcribing audio: {str(e)}"}
 
 # Singleton for reuse
 voice_stt = VoiceInSkill()

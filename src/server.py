@@ -17,10 +17,11 @@ from src.skills.voice_out import voice_tts
 from src.skills.swarm_telemetry import swarm_telemetry
 from src.skills.web_search import web_search
 from src.skills.browser_proxy import browser_proxy
-from src.config import DEFAULT_MODEL, LLM_BASE_URL, SEARXNG_URL, QDRANT_URL, POSTGRES_URL, DEFAULT_STORAGE_ROOT
+from src.config import DEFAULT_MODEL, LLM_BASE_URL, SEARXNG_URL, QDRANT_URL, POSTGRES_URL, DEFAULT_STORAGE_ROOT, PROJECT_ROOT
 from src.skills.file_system import FileSystemSkill
 from src.agents.skill_builder import skill_builder
 from src.skills.canvas_automation import canvas_automation_skill
+from scripts.bootstrap_indexer import run_indexing
 from src.routers.tools import router as tools_router
 from src.skills.skill_indexer import skill_indexer
 import os
@@ -38,7 +39,10 @@ from src.security.logger import security_logger
 from src.utils.db import init_db
 
 # Initialize Core Skills for Chat Context
-workspace_skill = FileSystemSkill(DEFAULT_STORAGE_ROOT)
+workspace_skill = FileSystemSkill({
+    "workspace": DEFAULT_STORAGE_ROOT,
+    "src": PROJECT_ROOT / "src"
+})
 
 def require_auth(request: Request = None, websocket: WebSocket = None):
     api_key = os.environ.get("AGENT_API_KEY", "")
@@ -106,6 +110,8 @@ app.include_router(soul_chat_router)
 @app.on_event("startup")
 async def startup_event():
     await init_db()
+    # Phase 7: Automated Skill Indexing
+    run_indexing()
 
 class RunRequest(BaseModel):
     prompt: str
@@ -116,6 +122,43 @@ active_runs = {}
 
 # Global event queue for streaming state updates
 update_queue = asyncio.Queue()
+
+# Active WebSockets
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except:
+                pass
+
+ws_manager = ConnectionManager()
+        
+@app.websocket("/stream")
+async def websocket_endpoint(websocket: WebSocket):
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+
+@app.post("/canvas/event")
+async def push_canvas_event(request: Request):
+    data = await request.json()
+    await ws_manager.broadcast(data)
+    return {"status": "broadcasted"}
 
 OLLAMA_BASE = "http://localhost:11434"
 
@@ -167,11 +210,20 @@ async def chat_with_ollama(request: ChatRequest):
         "1. Always identify as GUIDE.\n"
         "2. You have direct access to the files and skills listed above.\n"
         "3. Use MARKDOWN for all responses. **CRITICAL: Always use Markdown TABLES to present multiple options, structured actions, or system status.**\n"
-        "4. When generating docs or code, you may use CanvasAutomation to push content to the Research Canvas directly. Suggest 'PUSH TO CANVAS' button otherwise.\n"
-        "5. Be forthright. If a task is outside your current toolkit, say so."
+        "4. When generating docs or code, you MUST use `push_to_canvas` to display it to the user.\n"
+        "5. For file operations, use the root prefix: `workspace/` for user data, `src/` for project code.\n\n"
+        "FEW-SHOT EXAMPLES:\n"
+        "User: 'Create a python hello world script.'\n"
+        "Assistant: [Call `push_to_canvas(content='print(\"hello world\")', mode='CODE', title='hello.py')`]\n"
+        "User: 'Explain the browser skill.'\n"
+        "Assistant: [Call `read_file(file_path='src/skills/browser_proxy.py')` -> then explain and call `push_to_canvas` with summary]\n"
+        "User: 'List my files.'\n"
+        "Assistant: [Call `list_directory(path='workspace/')`]\n"
     )
 
     messages = [{"role": "system", "content": system_content}]
+    
+    logger.info(f"Incoming Chat Request - Prompt: {request.prompt[:50]}... | History length: {len(request.history) if request.history else 0}")
     
     # Process History (Informational context)
     if request.history:
@@ -198,41 +250,97 @@ async def chat_with_ollama(request: ChatRequest):
     })
 
     async def generate():
+        import asyncio
+        import json
+        from src.utils.tool_loader import dynamic_tools
+        
+        tools_def = dynamic_tools.get_schemas()
+
+        current_messages = messages.copy()
+        max_loops = 5
+
         try:
-            async with httpx.AsyncClient(timeout=120.0) as client:
-                async with client.stream(
-                    "POST",
-                    f"{OLLAMA_BASE}/api/chat",
-                    json={
-                        "model": model, 
-                        "messages": messages, 
-                        "stream": True,
-                        "options": {
-                            "num_ctx": 8192,
-                            "temperature": 0.7
+            async with httpx.AsyncClient(timeout=180.0) as client:
+                for loop_idx in range(max_loops):
+                    response = await client.post(
+                        f"{OLLAMA_BASE}/api/chat",
+                        json={
+                            "model": model, 
+                            "messages": current_messages, 
+                            "stream": False,
+                            "tools": tools_def,
+                            "options": {
+                                "num_ctx": 8192,
+                                "temperature": 0.7
+                            }
                         }
-                    }
-                ) as response:
-                    async for line in response.aiter_lines():
-                        if not line:
-                            continue
-                        chunk = json.loads(line)
-                        if "message" in chunk:
-                            content = chunk["message"].get("content", "")
-                            if content:
-                                # Phase 4: Output Filtering (Redaction)
-                                sanitized_content = output_filter.redact(content)
-                                if sanitized_content != content:
-                                    await security_logger.log_event(
-                                        event_type="output_redaction",
-                                        severity="low",
-                                        details={"original": content, "redacted": sanitized_content}
-                                    )
-                                yield f"data: {json.dumps({'content': sanitized_content})}\n\n"
-                        if chunk.get("done"):
-                            break
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    msg = data.get("message", {})
+                    
+                    tool_calls = msg.get("tool_calls", [])
+                    
+                    if tool_calls:
+                        # Append the assistant's tool call request
+                        current_messages.append(msg)
+                        
+                        for tc in tool_calls:
+                            func_name = tc.get("function", {}).get("name")
+                            args = tc.get("function", {}).get("arguments", {})
+                            
+                            # Yield a status to the UI so it doesn't look frozen
+                            yield f"data: {json.dumps({'content': f'\n\n*🛠️ Executing `{func_name}` via dynamic registry...*\n'})}\n\n"
+                            
+                            logger.info(f"Executing tool {func_name} with args: {args}")
+                            
+                            from src.utils.tool_validator import tool_validator
+                            is_valid, validated_args_or_error = tool_validator.validate_args(func_name, args)
+                            
+                            result_str = "Error: Tool failed to execute."
+                            if is_valid:
+                                try:
+                                    res = await dynamic_tools.execute(func_name, validated_args_or_error)
+                                    result_str = json.dumps(res, default=str)
+                                except Exception as e:
+                                    result_str = f"Error executing tool: {str(e)}"
+                            else:
+                                logger.warning(f"Validation failed for {func_name}. Asking LLM to correct.")
+                                result_str = validated_args_or_error
+                                
+                            current_messages.append({
+                                "role": "tool",
+                                "name": func_name,
+                                "content": result_str
+                            })
+                            # Yield completion
+                            yield f"data: {json.dumps({'content': f'*(Dynamic tool execution complete)*\n\n'})}\n\n"
+                            
+                        # Loop continues to let LLM analyze the tool results
+                        # Loop continues to let LLM analyze the tool results
+                        continue
+                        
+                    else:
+                        # No tool calls, we have the final content
+                        content = msg.get("content", "")
+                        sanitized_content = output_filter.redact(content)
+                        if sanitized_content != content:
+                            await security_logger.log_event(
+                                event_type="output_redaction",
+                                severity="low",
+                                details={"original": content, "redacted": sanitized_content}
+                            )
+                        
+                        # Simulate streaming by sending chunks
+                        chunk_size = 15
+                        for i in range(0, len(sanitized_content), chunk_size):
+                            yield f"data: {json.dumps({'content': sanitized_content[i:i+chunk_size]})}\n\n"
+                            await asyncio.sleep(0.01)
+                            
+                        break
+
         except Exception as e:
-            logger.error(f"Ollama streaming error: {e}")
+            logger.error(f"Ollama tool execution error: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

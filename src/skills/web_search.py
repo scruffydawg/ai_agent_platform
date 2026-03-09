@@ -81,10 +81,10 @@ class WebSearch:
                         "snippet": res.get("content"),
                         "source_tier": "High" if res.get("reputation_score", 0) > 0 else "Neutral"
                     })
-                return final_results
+                return {"status": "success", "data": {"results": final_results}}
                 
         except Exception as e:
             logger.error(f"SearXNG Search Error: {e}")
-            return []
+            return {"status": "error", "message": f"Search failed: {str(e)}", "data": {"results": []}}
 
 web_search = WebSearch()

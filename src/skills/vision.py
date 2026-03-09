@@ -36,20 +36,8 @@ class VisionSkill:
         """Mock privacy scan."""
         return False
 
-    def take_screenshot(self, filename: Optional[str] = None, force_buffer: bool = True) -> Optional[Dict[str, Any]]:
-        """
-        Captures the entire primary screen.
-        
-        Args:
-            filename (Optional[str]): Desired output filename. Auto-generated if None.
-            force_buffer (bool): If True, saves to local privacy buffer first.
-            
-        Returns:
-            Optional[Dict[str, Any]]: Metadata including path and privacy results.
-            
-        Usage Example:
-            vision.take_screenshot(filename="error_state.png", force_buffer=True)
-        """
+    def take_screenshot(self, filename: Optional[str] = None, force_buffer: bool = True) -> Dict[str, Any]:
+        """Captures the entire primary screen."""
         if not filename:
             filename = f"screenshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         
@@ -66,45 +54,21 @@ class VisionSkill:
                 is_sensitive = self.analyze_privacy(target_path)
             
             return {
-                "path": target_path,
-                "filename": filename,
-                "is_sensitive": is_sensitive,
-                "preview": self._get_base64_preview(target_path) if is_sensitive else None
+                "status": "success",
+                "message": f"Screenshot captured to {target_path}",
+                "data": {
+                    "path": target_path,
+                    "filename": filename,
+                    "is_sensitive": is_sensitive,
+                    "preview": self._get_base64_preview(target_path) if is_sensitive else None
+                }
             }
         except Exception as e:
             logger.error(f"Failed to take screenshot: {e}")
-            return None
+            return {"status": "error", "message": str(e)}
 
-    def finalize_capture(self, filename):
-        """Moves a buffered capture to permanent storage."""
-        if os.path.exists(self.buffer_path):
-            final_path = os.path.join(self.storage_root, filename)
-            shutil.move(self.buffer_path, final_path)
-            logger.info(f"Buffered capture finalized to {final_path}")
-            return final_path
-        return None
-
-    def _get_base64_preview(self, path):
-        """Helper to return a base64 string for UI display."""
-        try:
-            with open(path, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode('utf-8')
-        except:
-            return None
-
-    def capture_webcam(self, filename: Optional[str] = None) -> Optional[str]:
-        """
-        Captures a single frame from the default webcam device.
-        
-        Args:
-            filename (Optional[str]): Output filename (.jpg). Auto-generated if None.
-            
-        Returns:
-            Optional[str]: Absolute path to the saved image file.
-            
-        Usage Example:
-            vision.capture_webcam(filename="user_id_check.jpg")
-        """
+    def capture_webcam(self, filename: Optional[str] = None) -> Dict[str, Any]:
+        """Captures a single frame from the default webcam device."""
         if not filename:
             filename = f"webcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
         
@@ -113,8 +77,7 @@ class VisionSkill:
             import cv2
             cap = cv2.VideoCapture(0)
             if not cap.isOpened():
-                logger.error("Could not open webcam")
-                return None
+                return {"status": "error", "message": "Could not open webcam"}
             
             ret, frame = cap.read()
             if ret:
@@ -122,9 +85,11 @@ class VisionSkill:
                 logger.info(f"Webcam capture saved to {path}")
             
             cap.release()
-            return path if ret else None
+            if ret:
+                return {"status": "success", "message": f"Webcam capture saved to {path}", "data": {"path": path}}
+            return {"status": "error", "message": "Failed to read from webcam"}
         except Exception as e:
             logger.error(f"Failed to capture webcam: {e}")
-            return None
+            return {"status": "error", "message": str(e)}
 
 vision_skill = VisionSkill()

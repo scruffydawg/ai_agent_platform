@@ -51,70 +51,43 @@ class N8NControlSkill(BaseSkill):
         self.api_url = api_url
         self.api_key = api_key
 
+    def run(self) -> Dict[str, Any]:
+        return {"status": "error", "message": "N8NControlSkill is async. Call specific methods (list_workflows, trigger_workflow) directly."}
+
     async def list_workflows(self) -> Dict[str, Any]:
-        """
-        Retrieves a collection of all available n8n workflows.
-        
-        Returns:
-            Dict[str, Any]: Success status and the list of workflow objects.
-            
-        Usage Example:
-            await n8n.list_workflows()
-        """
+        """Retrieves a collection of all available n8n workflows."""
         headers = {"X-N8N-API-KEY": self.api_key} if self.api_key else {}
         async with httpx.AsyncClient(base_url=self.api_url, headers=headers) as client:
             try:
                 resp = await client.get("/workflows")
                 resp.raise_for_status()
-                return {"status": "success", "workflows": resp.json()}
+                return {"status": "success", "data": {"workflows": resp.json()}}
             except Exception as e:
                 logger.error(f"n8n list_workflows failed: {e}")
-                return {"status": "error", "message": str(e)}
+                return {"status": "error", "message": str(e), "data": {"workflows": []}}
 
     async def trigger_workflow(self, workflow_id: str) -> Dict[str, Any]:
-        """
-        Synchronously triggers an execution for a specific workflow.
-        
-        Args:
-            workflow_id (str): The unique ID of the target n8n workflow.
-            
-        Returns:
-            Dict[str, Any]: The execution details from n8n.
-            
-        Usage Example:
-            await n8n.trigger_workflow(workflow_id="5")
-        """
+        """Synchronously triggers an execution for a specific workflow."""
         headers = {"X-N8N-API-KEY": self.api_key} if self.api_key else {}
         async with httpx.AsyncClient(base_url=self.api_url, headers=headers) as client:
             try:
                 resp = await client.post(f"/workflows/{workflow_id}/executions")
                 resp.raise_for_status()
-                return {"status": "success", "execution": resp.json()}
+                return {"status": "success", "data": {"execution": resp.json()}}
             except Exception as e:
                 logger.error(f"n8n trigger_workflow failed: {e}")
                 return {"status": "error", "message": str(e)}
             
     async def get_execution(self, execution_id: str) -> Dict[str, Any]:
-        """
-        Fetches detailed audit logs for a specific n8n execution.
-        
-        Args:
-            execution_id (str): The ID of the execution to retrieve.
-            
-        Returns:
-            Dict[str, Any]: Full execution data including nodes and data passing.
-            
-        Usage Example:
-            await n8n.get_execution(execution_id="1024")
-        """
+        """Fetches detailed audit logs for a specific n8n execution."""
         headers = {"X-N8N-API-KEY": self.api_key} if self.api_key else {}
         async with httpx.AsyncClient(base_url=self.api_url, headers=headers) as client:
             try:
                 resp = await client.get(f"/executions/{execution_id}")
                 resp.raise_for_status()
-                return {"status": "success", "execution": resp.json()}
+                return {"status": "success", "data": {"execution": resp.json()}}
             except Exception as e:
                 logger.error(f"n8n get_execution failed: {e}")
                 return {"status": "error", "message": str(e)}
 
-n8n_control = N8NControlSkill()
+n8n_controller = N8NControlSkill()

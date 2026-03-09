@@ -17,7 +17,7 @@ class CanvasAutomationSkill:
         # Assuming the FastAPI server runs on localhost:8001
         self.api_base = "http://localhost:8001"
         
-    def push_to_canvas(self, mode: str, content: str, filename: str = None) -> str:
+    async def push_to_canvas(self, mode: str, content: str, filename: str = None) -> str:
         """
         Pushes content to the interactive Canvas UI and saves it locally.
         
@@ -29,6 +29,11 @@ class CanvasAutomationSkill:
         Returns:
             A status string indicating success or failure.
         """
+        # Normalize mode string from LLM to match frontend strict cases
+        mode = mode.upper() if mode else "MD"
+        if mode in ["MARKDOWN", "TEXT"]: mode = "MD"
+        if mode in ["DOCUMENT", "PDF"]: mode = "DOC"
+        
         # Save locally if a filename is provided
         saved_path = None
         if filename:
@@ -41,26 +46,42 @@ class CanvasAutomationSkill:
             except Exception as e:
                 logger.error(f"Failed to save canvas artifact: {e}")
                 
-        # Broadcast to frontend via server endpoint
+        # Import the unified schema definition
+        from src.utils.tool_validator import CanvasPushSchema
+        
+        # Coerce the dictionary into the standard schema
+        schema_model = CanvasPushSchema(mode=mode, content=content, filename=filename)
+        
+        # Broadcast to frontend directly without HTTP request to avoid deadlocking the server's event loop!
         try:
             payload = {
                 "type": "canvas_push",
-                "mode": mode,
-                "content": content,
+                "mode": schema_model.mode,
+                "content": schema_model.content,
                 "metadata": {
-                    "filename": filename or "artifact",
+                    "filename": schema_model.filename or "artifact",
                     "saved_path": saved_path
                 }
             }
-            # We hit our own server's internal endpoint synchronously to trigger the websocket
-            response = httpx.post(f"{self.api_base}/canvas/event", json=payload, timeout=5.0)
-            if response.status_code == 200:
-                result_msg = f"Successfully pushed to Canvas tab '{mode}'."
-                if saved_path:
-                    result_msg += f" Content saved locally to {saved_path}."
-                return result_msg
+            import sys
+            import asyncio
+            if "src.server" in sys.modules:
+                ws_manager = sys.modules["src.server"].ws_manager
+                asyncio.create_task(ws_manager.broadcast(payload))
             else:
-                return f"Failed to push to canvas. Server responded with {response.status_code}."
+                # Fallback to HTTP if server module isn't strictly imported yet
+                async def _send():
+                    try:
+                        async with httpx.AsyncClient() as client:
+                            await client.post(f"{self.api_base}/canvas/event", json=payload, timeout=3.0)
+                    except:
+                        pass
+                asyncio.create_task(_send())
+                
+            result_msg = f"Successfully pushed to Canvas tab '{mode}'."
+            if saved_path:
+                result_msg += f" Content saved locally to {saved_path}."
+            return result_msg
         except Exception as e:
             logger.error(f"Canvas push broadcast failed: {e}")
             return f"Failed to push to canvas: {str(e)}"

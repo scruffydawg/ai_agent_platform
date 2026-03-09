@@ -33,7 +33,7 @@ class DockerManagementSkill(BaseSkill):
                         "status": c.status,
                         "image": str(c.image.tags[0]) if c.image.tags else "unknown"
                     })
-                return {"status": "success", "containers": container_data}
+                return {"status": "success", "data": {"containers": container_data}}
 
             elif action == "start_container":
                 container_name = kwargs.get("name")
@@ -43,7 +43,6 @@ class DockerManagementSkill(BaseSkill):
 
             elif action == "stop_container":
                 container_name = kwargs.get("name")
-                # Safety check: Prevent stopping core infrastructure without explicit confirmation logic in larger flow
                 container = self.client.containers.get(container_name)
                 container.stop()
                 return {"status": "success", "message": f"Container {container_name} stopped."}
@@ -59,7 +58,7 @@ class DockerManagementSkill(BaseSkill):
                 tail = kwargs.get("tail", 50)
                 container = self.client.containers.get(container_name)
                 logs = container.logs(tail=tail).decode('utf-8')
-                return {"status": "success", "logs": logs}
+                return {"status": "success", "data": {"logs": logs}}
 
             else:
                 return {"status": "error", "message": f"Unknown action: {action}"}

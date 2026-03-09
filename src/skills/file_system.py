@@ -11,61 +11,90 @@
 # ============================================================
 import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from src.skills.base import BaseSkill
 
 class FileSystemSkill(BaseSkill):
     """
-    Skill for reading/writing files, strictly sandboxed to a specific directory.
-    Prevents path traversal vulnerabilities.
+    Skill for reading/writing files across multiple sandboxed roots.
+    Supports read-only access for sensitive directories like source code.
     """
     name = "file_system_skill"
-    description = "Read or write files within the designated sandbox directory."
+    description = "Read or write files within authorized sandbox directories."
 
-    def __init__(self, sandbox_dir: Path):
-        self.sandbox_dir = sandbox_dir.resolve()
-        self.sandbox_dir.mkdir(parents=True, exist_ok=True)
-
-    def _is_safe_path(self, target_path: str) -> bool:
+    def __init__(self, roots: Dict[str, str]):
         """
-        Validates that the requested path resolves to a location inside the sandbox.
+        roots: Dictionary mapping a virtual root name to a physical path.
+               Example: {'workspace': '~/guide_storage', 'src': '~/ai_platform/src'}
         """
-        # Resolve path to absolute, removing any ../ or ./
-        try:
-             # We use Path(target) instead of resolving to ensure it doesn't need to exist yet 
-             # to be checked for safety, but we check if its base is our sandbox
-             requested_path = (self.sandbox_dir / target_path).resolve()
-        except RuntimeError:
-             return False
+        self.roots = {}
+        for name, path in roots.items():
+            resolved = Path(path).resolve()
+            resolved.mkdir(parents=True, exist_ok=True)
+            self.roots[name] = {
+                "path": resolved,
+                "readonly": name == "src" # Convention: 'src' is always read-only
+            }
 
-        # Verify the resolved path starts with the sandbox directory
-        return requested_path.is_relative_to(self.sandbox_dir)
+    def _resolve_and_validate(self, file_path: str) -> Optional[tuple]:
+        """
+        Resolves a virtual path (e.g., 'src/skills/base.py') to a physical path.
+        Returns (physical_path, root_config) if valid, else None.
+        """
+        parts = Path(file_path).parts
+        if not parts:
+            return None
+        
+        root_name = parts[0]
+        sub_path = Path(*parts[1:])
+        
+        if root_name not in self.roots:
+            # Default to first root if no prefix matches (backwards compatibility)
+            root_name = list(self.roots.keys())[0]
+            sub_path = Path(file_path)
+
+        root_cfg = self.roots[root_name]
+        full_path = (root_cfg["path"] / sub_path).resolve()
+        
+        # Verify safety
+        if full_path.is_relative_to(root_cfg["path"]):
+            return full_path, root_cfg, root_name
+        return None
 
     def run(self, action: str, file_path: str, content: str = "") -> Dict[str, Any]:
         """
-        action: 'read' or 'write'
-        file_path: relative path within the sandbox
+        action: 'read', 'write', or 'list'
+        file_path: path starting with root name (e.g. 'workspace/memo.txt' or 'src/skills/')
         content: string content to write (if action=='write')
         """
-        if not self._is_safe_path(file_path):
-            return {"status": "error", "message": f"Security Exception: Path '{file_path}' attempts to traverse outside the sandbox."}
+        result = self._resolve_and_validate(file_path)
+        if not result:
+            return {"status": "error", "message": f"Security Exception: Path '{file_path}' is unauthorized or invalid."}
 
-        full_path = (self.sandbox_dir / file_path).resolve()
+        full_path, root_cfg, root_name = result
 
         try:
-            if action == 'write':
-                # Ensure parent directories exist
+            if action == 'list':
+                if not full_path.exists():
+                    return {"status": "error", "message": f"Path {file_path} not found."}
+                items = [f.name + ("/" if f.is_dir() else "") for f in full_path.iterdir()]
+                return {"status": "success", "data": {"items": sorted(items), "path": file_path}}
+            
+            elif action == 'write':
+                if root_cfg.get("readonly"):
+                    return {"status": "error", "message": f"ReadOnly Exception: Cannot write to root '{root_name}'"}
+                
                 full_path.parent.mkdir(parents=True, exist_ok=True)
                 with open(full_path, "w", encoding="utf-8") as f:
                     f.write(content)
-                return {"status": "success", "message": f"Successfully wrote to {file_path}"}
+                return {"status": "success", "message": f"Successfully wrote to {file_path}", "data": {"file_path": file_path}}
                 
             elif action == 'read':
                 if not full_path.exists():
                     return {"status": "error", "message": f"File {file_path} not found."}
                 with open(full_path, "r", encoding="utf-8") as f:
                     data = f.read()
-                return {"status": "success", "content": data}
+                return {"status": "success", "data": {"content": data, "file_path": file_path}}
                 
             else:
                  return {"status": "error", "message": f"Unsupported action: {action}"}

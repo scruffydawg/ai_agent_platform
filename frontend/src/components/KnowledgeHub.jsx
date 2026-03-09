@@ -171,7 +171,7 @@ const KnowledgeHub = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
                     key={i}
-                    className="p-4 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-emerald-500/30 transition-all group cursor-pointer"
+                    className="p-4 bg-slate-900/30 backdrop-blur-xl border border-slate-700/50 rounded-xl hover:border-emerald-500/50 hover:bg-slate-800/40 transition-all group cursor-pointer shadow-lg"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
@@ -205,7 +205,7 @@ const KnowledgeHub = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Bento-style Feature Cards */}
-              <div className="p-8 rounded-3xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/5 border border-emerald-500/20 col-span-1 md:col-span-2 relative overflow-hidden group">
+              <div className="p-8 rounded-3xl bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 backdrop-blur-2xl border border-emerald-500/30 col-span-1 md:col-span-2 relative overflow-hidden group shadow-2xl">
                 <div className="relative z-10 space-y-4">
                   <div className="w-14 h-14 bg-emerald-500 text-slate-900 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
                     <Library size={30} />
@@ -222,7 +222,7 @@ const KnowledgeHub = () => {
                 <Library className="absolute -right-10 -bottom-10 text-emerald-500/5 w-64 h-64 group-hover:scale-110 transition-transform duration-700" />
               </div>
 
-              <div className="p-6 rounded-3xl bg-slate-900/50 border border-slate-800">
+              <div className="p-6 rounded-3xl bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 shadow-xl">
                  <h3 className="text-lg font-bold text-slate-200 flex items-center gap-2">
                    <Code size={20} className="text-emerald-400" />
                    Coding Standards
@@ -234,7 +234,7 @@ const KnowledgeHub = () => {
                  </div>
               </div>
 
-              <div className="p-6 rounded-3xl bg-slate-900/50 border border-slate-800 shadow-xl shadow-black/20">
+              <div className="p-6 rounded-3xl bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 shadow-xl">
                  <h3 className="text-lg font-bold text-slate-200 flex items-center gap-2">
                    <Terminal size={20} className="text-cyan-400" />
                    N8N Workflows

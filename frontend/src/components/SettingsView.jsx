@@ -82,7 +82,7 @@ const SettingsView = ({ onOpenHelp, onTriggerVision, onManualCam }) => {
             <Folder size={20} style={{ alignSelf: 'center', opacity: 0.5 }} />
             <input 
               name="storagePath"
-              value={settings.storagePath}
+              value={settings.storagePath || ''}
               onChange={handleChange}
               placeholder="/absolute/path/to/storage"
               style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} 
@@ -177,7 +177,7 @@ const SettingsView = ({ onOpenHelp, onTriggerVision, onManualCam }) => {
              <Database size={20} style={{ alignSelf: 'center', opacity: 0.5 }} />
              <input 
               name="postgres_url"
-              value={settings.postgres_url}
+              value={settings.postgres_url || ''}
               onChange={handleChange}
               style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} 
              />
@@ -188,7 +188,7 @@ const SettingsView = ({ onOpenHelp, onTriggerVision, onManualCam }) => {
           <label style={{ display: 'block', marginBottom: '8px', opacity: 0.7 }}>QDRANT VECTOR DB URL</label>
           <input 
             name="qdrant_url"
-            value={settings.qdrant_url}
+            value={settings.qdrant_url || ''}
             onChange={handleChange}
             style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} 
           />
@@ -200,7 +200,7 @@ const SettingsView = ({ onOpenHelp, onTriggerVision, onManualCam }) => {
              <Globe size={20} style={{ alignSelf: 'center', opacity: 0.5 }} />
              <input 
               name="searxng_url"
-              value={settings.searxng_url}
+              value={settings.searxng_url || ''}
               onChange={handleChange}
               style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)' }} 
              />
