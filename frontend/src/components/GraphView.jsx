@@ -307,11 +307,12 @@ const GraphView = () => {
     try {
       // 1. Fetch Experts for the base registry
       const expertsResp = await axios.get(`${API_BASE}/swarm/experts`);
-      const experts = expertsResp.data.experts;
+      const expertsData = expertsResp.data?.data || expertsResp.data;
+      const experts = expertsData.experts || [];
       
       // 2. Fetch the persisted Flow (positions and edges)
       const flowResp = await axios.get(`${API_BASE}/swarm/flow`);
-      const flow = flowResp.data;
+      const flow = flowResp.data?.data || flowResp.data || {};
 
       if (flow.nodes && flow.nodes.length > 0) {
         // Use persisted nodes but refresh data callbacks

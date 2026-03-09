@@ -72,7 +72,9 @@ def create_app() -> FastAPI:
     app.include_router(health_router, tags=["legacy"])
     app.include_router(swarm_router, prefix="/swarm", tags=["legacy"])
     app.include_router(system_router, tags=["legacy"])
-    app.include_router(session_router, tags=["legacy"])
+    app.include_router(config_router, prefix="/config", tags=["legacy"])
+    app.include_router(tools_router, tags=["legacy"])
+    app.include_router(session_router, tags=["legacy"])  # Must be last because of /{session_id} catch-all
     
     @app.post("/chat", tags=["legacy"])
     async def legacy_chat(request: Request):

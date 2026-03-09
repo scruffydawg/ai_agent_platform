@@ -21,15 +21,18 @@ const SettingsView = ({ onOpenHelp, onTriggerVision, onManualCam }) => {
     const fetchData = async () => {
       try {
         const configResp = await axios.get(`${API_BASE}/config`);
-        setSettings(prev => ({ ...prev, ...configResp.data }));
+        // V2 envelope places the payload in 'data' key
+        const configData = configResp.data?.data || configResp.data;
+        setSettings(prev => ({ ...prev, ...configData }));
       } catch (e) {
         console.error("Failed to fetch config", e);
       }
       
       try {
         const modelsResp = await axios.get(`${API_BASE}/ollama/models`);
-        if (modelsResp.data.status === 'success') {
-            setOllamaModels(modelsResp.data.models);
+        if (modelsResp.data?.status === 'success') {
+            const modelsList = modelsResp.data?.data?.models || modelsResp.data?.models || [];
+            setOllamaModels(modelsList);
         }
       } catch (e) {
         console.error("Failed to fetch ollama models", e);

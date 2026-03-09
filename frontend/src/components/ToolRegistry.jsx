@@ -388,13 +388,15 @@ const ToolRegistry = () => {
                 axios.get(`${API_BASE}/tools/registries/code_tools`)
             ]);
 
-            const skills = (skillsResp.data || []).map(s => ({
+            const getArray = (resp) => Array.isArray(resp.data?.data) ? resp.data.data : (Array.isArray(resp.data) ? resp.data : []);
+
+            const skills = getArray(skillsResp).map(s => ({
                 ...s,
                 type: 'Skill',
                 subtype: s.archetype || 'skill'
             }));
 
-            const mcpServers = (mcpResp.data || []).map(m => ({
+            const mcpServers = getArray(mcpResp).map(m => ({
                 ...m,
                 type: 'MCP Server',
                 archetype: 'mcp',
@@ -406,7 +408,7 @@ const ToolRegistry = () => {
                 mcp_env_vars: m.env_vars || []
             }));
 
-            const codeTools = (codeResp.data || []).map(c => ({
+            const codeTools = getArray(codeResp).map(c => ({
                 ...c,
                 type: 'Code Tool',
                 archetype: 'code',

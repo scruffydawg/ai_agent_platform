@@ -114,7 +114,8 @@ const SystemsDashboard = ({ compact = false }) => {
     const fetchSwarmStatus = async () => {
         try {
             const resp = await axios.get(`${API_BASE}/swarm/status`);
-            setSwarmData(resp.data);
+            const payload = resp.data?.data || resp.data;
+            setSwarmData(payload);
             setLoading(false);
         } catch (e) {
             console.error("Failed to fetch swarm data", e);
