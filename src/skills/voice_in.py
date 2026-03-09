@@ -1,3 +1,4 @@
+from typing import Dict, Any
 import os
 from faster_whisper import WhisperModel
 from src.utils.logger import logger

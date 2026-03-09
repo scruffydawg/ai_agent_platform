@@ -27,7 +27,7 @@
             },
             "width": 140,
             "height": 102,
-            "selected": true,
+            "selected": false,
             "positionAbsolute": {
                 "x": 250,
                 "y": -1.021770682148059
@@ -51,14 +51,20 @@
             "id": "Security",
             "type": "soul",
             "position": {
-                "x": 0,
-                "y": 200
+                "x": -112.41397410740205,
+                "y": 262.45220783744554
             },
             "data": {
                 "label": "Security"
             },
             "width": 140,
-            "height": 102
+            "height": 102,
+            "selected": true,
+            "positionAbsolute": {
+                "x": -112.41397410740205,
+                "y": 262.45220783744554
+            },
+            "dragging": false
         },
         {
             "id": "ADHD_UX",
