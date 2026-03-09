@@ -63,24 +63,24 @@ kill -9 $(lsof -t -i:5173)
 
 ---
 
-## 🧭 DEBUGGING — QUICK DIAGNOSTICS
+## 🧭 DEBUGGING — QUICK DIAGNOSTICS (V2)
 
 ### Is the backend alive?
 ```bash
-curl http://localhost:8001/swarm/status
-# Expected: JSON with node telemetry data
+curl http://localhost:8001/api/v2/health
+# Expected: {"status": "success", "data": {"status": "healthy", ...}}
 ```
 
 ### Are sessions working?
 ```bash
-curl http://localhost:8001/sessions
-# Expected: {"sessions": [...]}
+curl http://localhost:8001/api/v2/sessions/
+# Expected: {"status": "success", "data": [...]}
 ```
 
 ### Is the Tool Registry loading?
 ```bash
-curl http://localhost:8001/tools/registry
-# Expected: JSON array of tools
+curl http://localhost:8001/api/v2/tools/registry
+# Expected: {"status": "success", "data": [...]}
 ```
 
 ### Check backend logs

@@ -17,18 +17,18 @@ YOU TYPE + HIT SEND
         ├─ 2. Append user msg to messages[] [UI → shows your message]
         │
         ▼
-  POST http://[hostname]:8001/chat
+  POST http://[hostname]:8001/api/v2/chat
   {
-    prompt: "your message",
-    history: [last 20 messages]
+    "prompt": "your message",
+    "history": []
   }
         │
         ▼
-  server.py /chat endpoint
+  apps/api/app.py (v2_router)
         │
-        ├─ Loads GUIDE system prompt (workspace-aware)
-        ├─ Loads recent file context from FileSystemSkill
-        ├─ Calls Ollama LLM (streaming)
+        ├─ Loads GUIDE system context
+        ├─ Invokes RuntimeService / GraphRunner
+        ├─ Streams response via SuccessResponse envelope
         │
         ▼
   Server-Sent Events (SSE) stream back to browser
@@ -104,30 +104,31 @@ ToolRegistry.jsx
 
 ---
 
-## 🏗️ BACKEND API ENDPOINTS
+## 🏗️ STANDARDIZED V2 API ENDPOINTS
 
-| Method | Endpoint | What it does |
-|--------|----------|-------------|
-| `GET` | `/sessions` | List all chat sessions |
-| `POST` | `/sessions/new` | Create new session |
-| `GET` | `/sessions/{id}` | Load session messages |
-| `POST` | `/sessions/{id}/message` | Append message + auto-title |
-| `POST` | `/chat` | Stream LLM response (SSE) |
-| `WS` | `/stream` | Real-time heartbeat + canvas push |
-| `GET` | `/swarm/status` | Node telemetry (CPU/RAM/GPU) |
-| `GET` | `/swarm/experts` | List active expert agents |
-| `GET` | `/swarm/expert/{name}` | Load expert .md soul |
-| `POST` | `/swarm/expert/{name}` | Save expert .md soul |
-| `POST` | `/swarm/expert/spawn` | Create new expert agent |
-| `DELETE` | `/swarm/expert/{name}` | Remove expert agent |
-| `GET` | `/tools/registry` | List all tools + skills |
-| `GET` | `/tools/source` | Get Python source code |
-| `POST` | `/tools/source` | Save edited source code |
-| `GET` | `/config` | Load runtime config |
-| `POST` | `/config` | Save runtime config |
-| `GET` | `/ollama/models` | List available Ollama models |
-| `POST` | `/storage/init` | Initialize storage directories |
-| `POST` | `/canvas/event` | Trigger canvas push event |
+All core endpoints are prefixed with `/api/v2/` and return a `SuccessResponse` object.
+
+| Category | Endpoint | Action |
+| :--- | :--- | :--- |
+| **Monitoring** | `GET /api/v2/health` | System health check |
+| **Config** | `GET /api/v2/config/` | Retrieve runtime settings |
+| **Sessions** | `GET /api/v2/sessions/` | List active sessions |
+| **Approvals** | `GET /api/v2/approvals` | List pending task approvals |
+| **Knowledge** | `GET /api/v2/knowledge/search` | perform vector search (RAG) |
+| **Forge** | `POST /api/v2/forge/interview` | Iterative skill generation |
+| **Tools** | `GET /api/v2/tools/registry` | Unified skill & MCP registry |
+| **Runtime** | `POST /api/v2/chat` | Execute agent interaction |
+
+---
+
+## 📦 COMPONENT ARCHITECTURE
+
+The platform has been refactored in Phase 12 into a modular structure:
+
+1.  **Apps (`apps/api/`)**: Standardized FastAPI application with namespaced routers.
+2.  **Services (`packages/services/`)**: Decentralized logic layers (EventBus, ApprovalService, etc.).
+3.  **Orchestrator (`packages/runtime/`)**: Decoupled graph execution and lifecycle management.
+4.  **Skills (`src/skills/`)**: Native Python tools with standardized header tags.
 
 ---
 

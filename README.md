@@ -19,8 +19,8 @@ A self-hosted, LAN-accessible, ADHD-optimized AI Agent Platform and Orchestratio
 For a comprehensive breakdown of the architecture, features, and capabilities, please refer to the main documentation:
 
 👉 **[Platform Overview & Architecture (src/docs/PLATFORM_OVERVIEW.md)](src/docs/PLATFORM_OVERVIEW.md)**
-👉 **[V2 API Architecture (docs/ARCHITECTURE_V2.md)](docs/ARCHITECTURE_V2.md)**
-👉 **[V2 Migration Guide (docs/MIGRATION_GUIDE.md)](docs/MIGRATION_GUIDE.md)**
+👉 **[V2 API Architecture (src/docs/ARCHITECTURE_V2.md)](src/docs/ARCHITECTURE_V2.md)**
+👉 **[V2 Migration Guide (src/docs/MIGRATION_GUIDE.md)](src/docs/MIGRATION_GUIDE.md)**
 
 ---
 
