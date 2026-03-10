@@ -398,93 +398,94 @@ async def get_tool_registry():
     # ── Write JSON Registries (Phase 9) ─────────────────────────────────────────
     try:
         registries_dir = Path(DEFAULT_STORAGE_ROOT) / "registries"
-        if registries_dir.exists():
-            # 1. Skills Registry
-            skills_data = [
-                {
+        registries_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 1. Skills Registry
+        skills_data = [
+            {
+                "name": t.name,
+                "description": t.description,
+                "filename": t.filename,
+                "archetype": t.archetype,
+                "status": t.status,
+                "icon": t.icon,
+                "docs_links": [{"label": d.label, "url": d.url} for d in t.docs_links],
+                "sample_calls": [{"action": s.action, "endpoint": s.endpoint, "notes": s.notes} for s in t.sample_calls],
+                "mcp_servers": [
+                    {"name": m.name, "path": m.path, "source_url": m.source_url, "env_vars": m.env_vars}
+                    for m in t.mcp_servers
+                ],
+                "code_tools": [
+                    {"name": c.name, "version": c.version, "purpose": c.purpose}
+                    for c in t.code_tools
+                ]
+            }
+            for t in registry if t.type == "Skill"
+        ]
+        (registries_dir / "skills_registry.json").write_text(json.dumps(skills_data, indent=2))
+
+        # 2. MCP Registry (De-duplicated & Health Checked)
+        mcp_map = {}
+        for t in registry:
+            if t.type == "MCP Server":
+                mcp_map[t.name] = {
                     "name": t.name,
-                    "description": t.description,
-                    "filename": t.filename,
-                    "archetype": t.archetype,
-                    "status": t.status,
-                    "icon": t.icon,
-                    "docs_links": [{"label": d.label, "url": d.url} for d in t.docs_links],
-                    "sample_calls": [{"action": s.action, "endpoint": s.endpoint, "notes": s.notes} for s in t.sample_calls],
-                    "mcp_servers": [
-                        {"name": m.name, "path": m.path, "source_url": m.source_url, "env_vars": m.env_vars}
-                        for m in t.mcp_servers
-                    ],
-                    "code_tools": [
-                        {"name": c.name, "version": c.version, "purpose": c.purpose}
-                        for c in t.code_tools
-                    ]
+                    "path": t.mcp_path,
+                    "source_url": t.mcp_source_url,
+                    "env_vars": [],
+                    "status": t.status
                 }
-                for t in registry if t.type == "Skill"
-            ]
-            (registries_dir / "skills_registry.json").write_text(json.dumps(skills_data, indent=2))
+        for t in registry:
+            if t.type == "Skill":
+                for m in t.mcp_servers:
+                    if m.name not in mcp_map:
+                        mcp_map[m.name] = {
+                            "name": m.name,
+                            "path": m.path,
+                            "source_url": m.source_url,
+                            "env_vars": m.env_vars,
+                            "status": "Unknown"
+                        }
 
-            # 2. MCP Registry (De-duplicated & Health Checked)
-            mcp_map = {}
-            for t in registry:
-                if t.type == "MCP Server":
-                    mcp_map[t.name] = {
-                        "name": t.name,
-                        "path": t.mcp_path,
-                        "source_url": t.mcp_source_url,
-                        "env_vars": [],
-                        "status": t.status
-                    }
-            for t in registry:
-                if t.type == "Skill":
-                    for m in t.mcp_servers:
-                        if m.name not in mcp_map:
-                            mcp_map[m.name] = {
-                                "name": m.name,
-                                "path": m.path,
-                                "source_url": m.source_url,
-                                "env_vars": m.env_vars,
-                                "status": "Unknown"
-                            }
-
-            # Health check ping
-            for name, data in mcp_map.items():
-                if data["path"]:
-                    if "npx" in data["path"]:
+        # Health check ping
+        for name, data in mcp_map.items():
+            if data["path"]:
+                if "npx" in data["path"]:
+                    data["status"] = "Active"
+                else:
+                    mcp_binary = Path(data["path"]).expanduser()
+                    # Quick health check: if local binary exists, active; otherwise offline
+                    if mcp_binary.exists():
                         data["status"] = "Active"
                     else:
-                        mcp_binary = Path(data["path"]).expanduser()
-                        # Quick health check: if local binary exists, active; otherwise offline
-                        if mcp_binary.exists():
-                            data["status"] = "Active"
-                        else:
-                            data["status"] = "Offline"
-                else:
-                    data["status"] = "Active"
-                    
-                # Feed status back to the registry list for the UI!
-                for t in registry:
-                    if t.name == name:
-                        t.status = data["status"]
-
-            (registries_dir / "mcp_registry.json").write_text(json.dumps(list(mcp_map.values()), indent=2))
-
-            # 3. Code Tools Registry
-            code_map = {}
+                        data["status"] = "Offline"
+            else:
+                data["status"] = "Active"
+                
+            # Feed status back to the registry list for the UI!
             for t in registry:
-                if t.type == "Skill":
-                    for c in t.code_tools:
-                        if c.name not in code_map:
-                            code_map[c.name] = {
-                                "name": c.name,
-                                "version": c.version,
-                                "purpose": c.purpose,
-                                "used_by": [t.name]
-                            }
-                        else:
-                            if t.name not in code_map[c.name]["used_by"]:
-                                code_map[c.name]["used_by"].append(t.name)
-            
-            (registries_dir / "code_tools_registry.json").write_text(json.dumps(list(code_map.values()), indent=2))
+                if t.name == name:
+                    t.status = data["status"]
+
+        (registries_dir / "mcp_registry.json").write_text(json.dumps(list(mcp_map.values()), indent=2))
+
+        # 3. Code Tools Registry
+        code_map = {}
+        for t in registry:
+            if t.type == "Skill":
+                for c in t.code_tools:
+                    if c.name not in code_map:
+                        code_map[c.name] = {
+                            "name": c.name,
+                            "version": c.version,
+                            "purpose": c.purpose,
+                            "used_by": [t.name]
+                        }
+                    else:
+                        if t.name not in code_map[c.name]["used_by"]:
+                            code_map[c.name]["used_by"].append(t.name)
+        
+        (registries_dir / "code_tools_registry.json").write_text(json.dumps(list(code_map.values()), indent=2))
             
     except Exception as e:
         print(f"Error writing JSON registries: {e}")
@@ -520,6 +521,54 @@ async def get_json_registry(registry_name: str):
 class ToolSourceUpdate(BaseModel):
     filename: str
     content: str
+
+
+class ConsultMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ConsultRequest(BaseModel):
+    tool_name: str
+    tool_type: str
+    tool_description: str
+    tool_source: str
+    tool_metadata: Dict[str, Any]
+    messages: List[ConsultMessage]
+
+
+@router.post("/registry/consult")
+async def consult_guide(request: ConsultRequest):
+    """Guide Contextual Consult: Provides LLM-powered insights about a tool."""
+    try:
+        from src.llm.client import LLMClient
+        llm = LLMClient()
+        
+        # Build prompt
+        system_prompt = f"""You are 'Guide', the platform's AI Architect. 
+You are providing a contextual consult for the tool: {request.tool_name} ({request.tool_type}).
+Description: {request.tool_description}
+Metadata: {json.dumps(request.tool_metadata)}
+
+The tool's source code is provided below:
+---
+{request.tool_source}
+---
+
+Answer the user's questions about how to use, configure, or improve this tool. 
+Be concise, elite, and helpful. Use markdown.
+"""
+        
+        messages = [{"role": "system", "content": system_prompt}]
+        for m in request.messages:
+            messages.append({"role": m.role, "content": m.content})
+            
+        response = await llm.generate_async(messages=messages)
+        return {"status": "success", "response": response}
+    except Exception as e:
+        logger.error(f"Consult Error: {e}")
+        return {"status": "error", "message": str(e)}
+
 
 
 @router.get("/source")

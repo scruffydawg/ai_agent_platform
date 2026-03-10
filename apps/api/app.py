@@ -15,7 +15,7 @@ from apps.api.routes.approval_routes import router as approval_router
 from apps.api.routes.system_routes import router as system_router
 from apps.api.routes.ollama_routes import router as ollama_router
 from src.utils.db import init_db
-from scripts.bootstrap_indexer import run_indexing
+# from scripts.bootstrap_indexer import run_indexing
 from packages.services.event_service import event_service
 from src.utils.logger import logger
 import json
@@ -28,9 +28,30 @@ def create_app() -> FastAPI:
     async def lifespan(app: FastAPI):
         # Startup
         await init_db()
-        run_indexing()
+        
+        # Run indexing in background to avoid blocking startup
+        from scripts.bootstrap_indexer import run_indexing
+        loop = asyncio.get_running_loop()
+        loop.run_in_executor(None, run_indexing)
+        
+        # Phase 9: Start Periodic Tool Health Monitor
+        from apps.api.routes.tools_routes import get_tool_registry
+        async def tool_health_monitor():
+            await asyncio.sleep(10) # Wait for initial startup to settle
+            while True:
+                try:
+                    await get_tool_registry()
+                    logger.info("Tool Health Monitor: Registry synchronized.")
+                except Exception as e:
+                    logger.error(f"Tool Health Monitor Error: {e}")
+                await asyncio.sleep(300) # Every 5 minutes
+        
+        app.state.health_monitor_task = asyncio.create_task(tool_health_monitor())
+        
         yield
         # Shutdown
+        if hasattr(app.state, "health_monitor_task"):
+            app.state.health_monitor_task.cancel()
         pass
 
     app = FastAPI(

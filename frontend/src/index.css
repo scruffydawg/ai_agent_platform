@@ -41,6 +41,10 @@
   --status-thinking: #FBC02D;
   --status-recovering: var(--accent-red);
   --status-error: #E53935;
+  
+  --neon-cyan: 0 0 10px rgba(0, 188, 212, 0.4), 0 0 20px rgba(0, 188, 212, 0.2);
+  --neon-ochre: 0 0 10px rgba(224, 169, 109, 0.4), 0 0 20px rgba(224, 169, 109, 0.2);
+  --neon-purple: 0 0 10px rgba(179, 157, 219, 0.4), 0 0 20px rgba(179, 157, 219, 0.2);
 
   color-scheme: dark;
   color: var(--text-primary);
@@ -535,4 +539,40 @@ button {
 
 .markdown-body td strong {
   color: var(--accent-ochre);
+}
+
+.neon-border-cyan { border: 1px solid var(--accent-cyan) !important; box-shadow: var(--neon-cyan) !important; }
+.neon-border-ochre { border: 1px solid var(--accent-ochre) !important; box-shadow: var(--neon-ochre) !important; }
+.neon-border-purple { border: 1px solid var(--accent-purple) !important; box-shadow: var(--neon-purple) !important; }
+
+.elite-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.elite-glow::after {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: -100%;
+  width: 300%;
+  height: 300%;
+  background: radial-gradient(circle at center, rgba(224, 169, 109, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  animation: elite-sweep 10s infinite linear;
+}
+
+@keyframes elite-sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.status-pulse {
+  animation: status-pulse-anim 2s infinite;
+}
+
+@keyframes status-pulse-anim {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
 }

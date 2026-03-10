@@ -617,10 +617,10 @@ const ToolRegistry = () => {
                     </div>
                 </div>
 
-                {tool.type === 'MCP Server' && tool.status && (
+                {tool.status && (
                     <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <div className={tool.status === 'Offline' ? '' : 'status-pulse'} style={{ width: '6px', height: '6px', borderRadius: '50%', background: tool.status === 'Offline' ? 'var(--accent-red)' : 'var(--accent-green)' }} />
-                        <span style={{ fontSize: '0.65rem', fontWeight: '900', color: tool.status === 'Offline' ? 'var(--accent-red)' : 'var(--accent-green)', letterSpacing: '1.5px' }}>
+                        <div className={tool.status === 'Offline' ? '' : 'status-pulse'} style={{ width: '6px', height: '6px', borderRadius: '50%', background: tool.status === 'Offline' ? 'var(--accent-red)' : 'var(--accent-green)', boxShadow: tool.status === 'Offline' ? 'None' : '0 0 8px var(--accent-green)' }} />
+                        <span style={{ fontSize: '0.65rem', fontWeight: '900', color: tool.status === 'Offline' ? 'var(--accent-red)' : 'var(--accent-green)', letterSpacing: '1.5px', textShadow: tool.status === 'Offline' ? 'none' : '0 0 10px rgba(34,197,94,0.4)' }}>
                             {tool.status.toUpperCase()}
                         </span>
                     </div>

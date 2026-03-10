@@ -7,7 +7,6 @@ import hashlib
 from typing import List, Dict, Any, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from sentence_transformers import SentenceTransformer
 from src.config import QDRANT_URL
 from src.utils.logger import logger
 
@@ -22,13 +21,25 @@ class SkillIndexer:
     """
 
     def __init__(self):
-        self.client = QdrantClient(url=QDRANT_URL)
-        try:
-            self.model = SentenceTransformer("all-MiniLM-L6-v2")
-        except Exception as e:
-            logger.error(f"SkillIndexer: Failed to load embedding model: {e}")
-            self.model = None
-        self._ensure_collection()
+        self._client = None
+        self._model = None
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = QdrantClient(url=QDRANT_URL)
+        return self._client
+
+    @property
+    def model(self):
+        if self._model is None:
+            try:
+                from sentence_transformers import SentenceTransformer
+                self._model = SentenceTransformer("all-MiniLM-L6-v2")
+            except Exception as e:
+                logger.error(f"SkillIndexer: Failed to load embedding model: {e}")
+                self._model = None
+        return self._model
 
     def _ensure_collection(self):
         try:
@@ -65,6 +76,9 @@ class SkillIndexer:
         Returns:
             True on success.
         """
+        # Trigger creation/check on first index
+        self._ensure_collection()
+
         if not self.model:
             logger.error("SkillIndexer: Cannot index — embedding model not loaded.")
             return False

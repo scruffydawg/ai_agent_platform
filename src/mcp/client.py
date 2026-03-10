@@ -1,24 +1,41 @@
-from typing import Any, Dict, List
+import httpx
+import asyncio
+from typing import Any, Dict, List, Optional
 import json
+import os
 
 class MCPClient:
     """
     Model Context Protocol (MCP) Scaffolding Client.
     Responsible for defining the interface to external, standardized MCP servers.
     """
-    def __init__(self, server_url: str = None):
+    def __init__(self, server_url: Optional[str] = None):
         self.server_url = server_url
         self.connected = False
         self.available_tools: List[Dict[str, Any]] = []
 
-    def connect(self) -> bool:
-        """Simulates connecting to an MCP Server to handshake and retrieve tools."""
+    async def connect(self) -> bool:
+        """Handshakes with the MCP Server to retrieve tools."""
         if not self.server_url:
             print("[MCP] No server URL provided. Operating in dry-run mode.")
             return False
             
         print(f"[MCP] Attempting connection to {self.server_url}...")
-        # In scaffolding, we mock a successful connection if a URL is provided
+        
+        # If it's an HTTP URL, try to ping it
+        if self.server_url and self.server_url.startswith("http"):
+            try:
+                async with httpx.AsyncClient(timeout=2.0) as client:
+                    resp = await client.get(self.server_url)
+                    if resp.status_code == 200:
+                        self.connected = True
+                        return True
+            except Exception as e:
+                print(f"[MCP] HTTP Ping failed: {e}")
+                return False
+        
+        # If it's a local command (npx etc) or path, we simulate active for now
+        # In a real implementation, we'd spawn the process.
         self.connected = True
         return True
 

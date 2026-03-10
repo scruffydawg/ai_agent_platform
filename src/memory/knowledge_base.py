@@ -1,7 +1,6 @@
 from typing import List, Dict, Any, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from sentence_transformers import SentenceTransformer
 from src.config import QDRANT_URL, PROJECT_ROOT
 from src.utils.logger import logger
 import uuid
@@ -14,20 +13,33 @@ class KnowledgeBaseManager:
     COLLECTION_NAME = "knowledge_base"
 
     def __init__(self, url: str = QDRANT_URL):
-        self.client = QdrantClient(url=url)
-        # Using the same model as vector_memory for consistency
-        try:
-            self.model = SentenceTransformer('all-MiniLM-L6-v2')
-            self.vector_size = 384
-        except Exception as e:
-            logger.error(f"Failed to load sentence-transformer for KB: {e}")
-            self.model = None
-            self.vector_size = 1536 # Fallback size
-            
-        self._ensure_collection()
+        self._client = None
+        self._model = None
+        self._url = url
+        self._collection_ensured = False
+        # Default vector size for all-MiniLM-L6-v2
+        self.vector_size = 384
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = QdrantClient(url=self._url)
+        return self._client
+
+    @property
+    def model(self):
+        if self._model is None:
+            try:
+                from sentence_transformers import SentenceTransformer
+                self._model = SentenceTransformer('all-MiniLM-L6-v2')
+            except Exception as e:
+                logger.error(f"KB: Failed to load sentence-transformer: {e}")
+                self._model = None
+        return self._model
 
     def _ensure_collection(self):
-        """Creates the collection if it doesn't exist or re-creates on dimension mismatch."""
+        if self._collection_ensured:
+            return
         try:
             collections = self.client.get_collections().collections
             exists = any(c.name == self.COLLECTION_NAME for c in collections)
@@ -47,6 +59,7 @@ class KnowledgeBaseManager:
                     vectors_config=models.VectorParams(size=self.vector_size, distance=models.Distance.COSINE),
                 )
                 logger.info(f"Knowledge Base collection '{self.COLLECTION_NAME}' created with size {self.vector_size}.")
+            self._collection_ensured = True
         except Exception as e:
             logger.error(f"Failed to ensure Knowledge Base collection: {e}")
 
@@ -68,6 +81,7 @@ class KnowledgeBaseManager:
         """
         Chunks, embeds, and stores a document in the Knowledge Base.
         """
+        self._ensure_collection()
         if not self.model:
             logger.error("KB Ingestion failed: Embedding model not loaded.")
             return False
@@ -106,6 +120,7 @@ class KnowledgeBaseManager:
 
     async def search_reference(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Searches for relevant documentation snippets using vector search."""
+        self._ensure_collection()
         if not self.model:
             logger.error("KB Search failed: Embedding model not loaded.")
             return []
