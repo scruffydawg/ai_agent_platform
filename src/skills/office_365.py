@@ -1,7 +1,9 @@
 import httpx
+import asyncio
 from src.utils.microsoft_auth import MicrosoftAuthHandler
 from src.skills.base import BaseSkill
 from src.utils.logger import logger
+from packages.services.event_service import event_service
 
 class Office365Skill(BaseSkill):
     """
@@ -12,8 +14,8 @@ class Office365Skill(BaseSkill):
         self.auth_handler = MicrosoftAuthHandler(client_id, client_secret, tenant_id, self.scopes)
 
     async def list_files(self, limit: int = 10):
-        """List files in OneDrive for Business."""
-        token = self.auth_handler.get_access_token()
+        """List files in OneDrive for Business (Async)."""
+        token = await asyncio.to_thread(self.auth_handler.get_access_token)
         if not token:
             return []
 
@@ -32,7 +34,7 @@ class Office365Skill(BaseSkill):
 
     async def send_mail(self, to: str, subject: str, content: str):
         """Send an email via Outlook (Graph API)."""
-        token = self.auth_handler.get_access_token()
+        token = await asyncio.to_thread(self.auth_handler.get_access_token)
         if not token:
             return False
 
@@ -56,7 +58,20 @@ class Office365Skill(BaseSkill):
                 }
             }
             resp = await client.post(url, headers=headers, json=payload)
-            return resp.status_code == 202
+            success = resp.status_code == 202
+            
+            if success:
+                event_service.publish({
+                    "type": "SKILL_NOTIFICATION",
+                    "payload": {
+                        "skill": "office_365",
+                        "action": "send_mail",
+                        "status": "success",
+                        "recipient": to
+                    }
+                })
+            
+            return success
 
     async def execute(self, params: dict):
         action = params.get("action")

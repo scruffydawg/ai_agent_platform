@@ -1,0 +1,17 @@
+{
+  "CapabilityResult": {
+    "status": "success",
+    "result": {
+      "messages": [
+        {
+          "id": "msg_123",
+          "subject": "Invoice March",
+          "sender": "Bob"
+        }
+      ],
+      "count": 1
+    },
+    "trace_id": "trace_abc123",
+    "duration_ms": 842
+  }
+}

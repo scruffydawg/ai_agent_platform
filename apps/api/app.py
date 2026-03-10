@@ -13,6 +13,7 @@ from apps.api.routes.forge_routes import router as forge_router
 from apps.api.routes.runtime_routes import router as runtime_router
 from apps.api.routes.approval_routes import router as approval_router
 from apps.api.routes.system_routes import router as system_router
+from apps.api.routes.ollama_routes import router as ollama_router
 from src.utils.db import init_db
 from scripts.bootstrap_indexer import run_indexing
 from packages.services.event_service import event_service
@@ -60,6 +61,20 @@ def create_app() -> FastAPI:
     v2_router.include_router(runtime_router, prefix="/runtime", tags=["runtime"])
     v2_router.include_router(approval_router, prefix="/approvals", tags=["approvals"])
     v2_router.include_router(system_router, prefix="/system", tags=["system"])
+    v2_router.include_router(ollama_router, prefix="/ollama", tags=["ollama"])
+
+    @v2_router.post("/chat", tags=["legacy"])
+    async def legacy_chat(request: Request):
+        from apps.api.routes.runtime_routes import chat, ChatRequest
+        data = await request.json()
+        return await chat(ChatRequest(**data))
+    
+    @v2_router.post("/run", tags=["legacy"])
+    async def legacy_run(request: Request):
+        from apps.api.routes.runtime_routes import run_graph
+        from apps.api.routes.runtime_routes import RunRequest
+        body = await request.json()
+        return await run_graph(RunRequest(**body))
 
     # Include Tool Registry from src.routers
     # Include Tool Registry from V2 routes
@@ -74,24 +89,15 @@ def create_app() -> FastAPI:
     app.include_router(system_router, tags=["legacy"])
     app.include_router(config_router, prefix="/config", tags=["legacy"])
     app.include_router(tools_router, tags=["legacy"])
-    app.include_router(session_router, tags=["legacy"])  # Must be last because of /{session_id} catch-all
-    
-    @app.post("/chat", tags=["legacy"])
-    async def legacy_chat(request: Request):
-        from apps.api.routes.runtime_routes import chat
-        return await chat(await request.json())
-    
-    @app.post("/run", tags=["legacy"])
-    async def legacy_run(request: Request):
-        from apps.api.routes.runtime_routes import run_graph
-        from apps.api.routes.runtime_routes import RunRequest
-        body = await request.json()
-        return await run_graph(RunRequest(**body))
+    app.include_router(memory_router, prefix="/memory", tags=["legacy"])
+    app.include_router(session_router, prefix="/sessions", tags=["legacy"])  # Must be last because of /{session_id} catch-all
     
     @app.post("/canvas/event", tags=["legacy"])
     async def legacy_canvas_event(request: Request):
         from apps.api.routes.system_routes import push_canvas_event
         return await push_canvas_event(request)
+
+    @app.get("/", tags=["legacy"])
     async def root() -> dict:
         return {
             "name": "AI Agent Platform API",

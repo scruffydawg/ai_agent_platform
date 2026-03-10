@@ -49,7 +49,57 @@ class PersonaLoader:
             if not guidelines: guidelines = self._extract_section(body, "GUIDELINES")
             if not memory: memory = self._extract_section(body, "EVOLUTIONARY MEMORY")
 
-            # 4. Generate System Prompt
+            # 4. Map and Validate AgentSpec (Hardening)
+            from packages.services.validation_service import validation_service
+            
+            # Map legacy frontmatter to AgentSpec
+            roles = frontmatter.get("roles", [])
+            primary_role = frontmatter.get("role", "specialist") 
+            if "orchestrator" in roles or persona_name.lower() == "guide":
+                primary_role = "orchestrator"
+
+            agent_spec = {
+                "agent_id": persona_name,
+                "role": primary_role,
+                "mission": frontmatter.get("mission", f"Act as the {persona_name} expert within the platform."),
+                "reasoning_policy": frontmatter.get("reasoning_policy", "Think step-by-step, verify observations, and act within constraints."),
+                "allowed_capabilities": frontmatter.get("tools", []),
+                "trust_tier_limit": frontmatter.get("trust_tier_limit", 2 if primary_role != "orchestrator" else 4),
+                "memory_read_policy": frontmatter.get("memory_read_policy", ["working", "resume", "semantic", "episodic"]),
+                "memory_write_policy": frontmatter.get("memory_write_policy", ["working", "session", "resume", "semantic", "episodic"]),
+                "context_packet_policy": frontmatter.get("context_packet_policy", {
+                    "max_context_tokens": 16000,
+                    "allow_resume_priority": True,
+                    "include_recent_exchange_turns": 5
+                }),
+                "output_envelope": frontmatter.get("output_envelope", {
+                    "status": "success",
+                    "summary": "Task completed."
+                }),
+                "handoff_policy": frontmatter.get("handoff_policy", {
+                    "allowed_handoffs": ["Architect", "Security", "GUIDE"],
+                    "requires_trace": True
+                }),
+                "failure_policy": frontmatter.get("failure_policy", {
+                    "retry_allowed": True,
+                    "max_retries": 1,
+                    "escalate_to": "GUIDE"
+                }),
+                "secrets_profile": frontmatter.get("secrets_profile", "none"),
+                "observability_tags": frontmatter.get("observability_tags", ["expert", persona_name.lower()])
+            }
+
+            # Enforce Hardened Role-Based Ceilings (R5)
+            if agent_spec["role"] in ["specialist", "reviewer"]:
+                if agent_spec["trust_tier_limit"] > 2:
+                    logger.warning(f"Persona {persona_name} (role: {agent_spec['role']}) requested trust_tier_limit {agent_spec['trust_tier_limit']}. ENFORCING CEILING OF 2.")
+                    agent_spec["trust_tier_limit"] = 2
+
+            # Schema Validation
+            if not validation_service.validate_agent(agent_spec):
+                logger.error(f"Persona {persona_name} failed AgentSpec validation. Attempting to load with best-effort correction.")
+
+            # 5. Generate System Prompt
             system_prompt = self._generate_system_prompt(
                 base_soul=base_soul,
                 soul_identity=soul_identity,
@@ -61,7 +111,7 @@ class PersonaLoader:
 
             return {
                 "name": persona_name,
-                "config": frontmatter,
+                "config": agent_spec, # Use the hardened spec
                 "system_prompt": system_prompt,
                 "raw_body": body
             }

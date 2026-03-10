@@ -17,7 +17,7 @@ class RunRequest(BaseModel):
     target_node: Optional[str] = "Observer"
     graph_data: Optional[Dict] = None
 
-@router.post("/chat", response_model=SuccessResponse)
+@router.post("/chat")
 async def chat(request: ChatRequest):
     # Chat stream still returns StreamingResponse, but we can wrap the init
     # In V2, we might want a standard 'stream started' envelope

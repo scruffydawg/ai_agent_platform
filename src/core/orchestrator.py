@@ -9,7 +9,13 @@ from src.memory.broker import MemoryBroker
 from src.memory.storage import MemoryLane
 from src.utils.logger import logger
 from pathlib import Path
+from packages.services.screen_service import screen_service
+from packages.services.event_service import event_service
+from packages.services.queue_service import queue_service
+from packages.services.metrics_service import metrics_service
 import json
+import asyncio
+import time
 
 class StateGraphOrchestrator(BaseAgent):
     """
@@ -65,18 +71,22 @@ class StateGraphOrchestrator(BaseAgent):
                  state.add_message("system", f"Expert {expert_name} persona not found.", sender=expert_name)
                  return state
 
+            # Ensure memory is initialized
+            if self.memory_manager.memory is None:
+                await self.memory_manager.initialize()
+
             # 1. Assemble context via Memory Broker (GUIDE Stage 8)
             # We treat the last user message as the request
             last_msg = state.get_last_message()
             request = last_msg.content if last_msg else "Continue task"
             
             # Assemble the packet
-            state.context_packet = self.memory_broker.assemble_context_packet(
+            state.context_packet = await self.memory_broker.assemble_context_packet(
                 request, self.memory_manager.memory
             )
             
             # 2. Update Working Memory (GUIDE Section 3.2)
-            self.memory_manager.add_message(
+            await self.memory_manager.add_message(
                 "system", 
                 f"Executing node: {expert_name}", 
                 lane=MemoryLane.WORKING
@@ -86,8 +96,27 @@ class StateGraphOrchestrator(BaseAgent):
             state.add_message("assistant", f"Processing via {expert_name}...", sender=expert_name)
             
             # Record outcome in session lane
-            self.memory_manager.add_message("assistant", f"Result from {expert_name}", lane=MemoryLane.SESSION)
-            
+            # 3. Dynamic UI Manifestation (Phase 4)
+            # If the result seems complex, manifest it visually
+            if expert_name in ["Architect", "KnowledgeHub"]:
+                # ... manifestation logic ...
+                pass
+
+            # 4. Recursive Sub-Graph Support (Phase 8)
+            if "RECURSIVE_SWARM" in request:
+                logger.info(f"Orchestrator: Recursive swarm triggered by {expert_name}")
+                sub_orchestrator = StateGraphOrchestrator(agent_id=f"sub_{expert_name}_{int(time.time())}")
+                # Transfer relevant context to sub-graph
+                sub_state = AgentState(variables=state.variables.copy())
+                sub_state.add_message("user", state.get_last_message().content)
+                
+                # Execute sub-graph
+                result_state = await sub_orchestrator.run_graph(sub_state)
+                
+                # Merge results back
+                state.add_message("assistant", f"Sub-swarm result: {result_state.get_last_message().content if result_state.get_last_message() else 'No result'}", sender=f"sub_{expert_name}")
+                state.variables.update(result_state.variables)
+
             return state
         return expert_node_func
 
@@ -140,9 +169,52 @@ class StateGraphOrchestrator(BaseAgent):
         state.next_node = "observing"
         return state
 
+    async def run_queued(self, state: AgentState, priority: int = 10) -> AgentState:
+        """Admission Control: Enqueue request and wait for turn."""
+        queue_size = await queue_service.get_queue_size()
+        if queue_size > 100:
+             state.error = "System Saturation: Queue is too long."
+             return state
+             
+        # Enqueue state identifier (using session_id)
+        session_id = state.variables.get("session_id", "default")
+        await queue_service.enqueue(session_id, priority=priority)
+        
+        # Poll for turn (Simplified FIFO check for simulation)
+        while True:
+            # In a real system, a worker would pull from queue.
+            # Here, the request 'waits' its turn in the orchestrator flow.
+            # We'll simulate 'waiting' by checking if we are top 3.
+            if await queue_service.get_queue_size() <= 3:
+                break
+            await asyncio.sleep(1)
+            
+        return await self.run_graph(state)
+
+    async def metacognitive_observer(self, state: AgentState) -> AgentState:
+        """Metacognition: Review swarm state for loops or stagnation (Phase 8)."""
+        # History check for loop detection (nodes visited)
+        history = [n for n in state.variables.get("node_history", []) if n != "metacognitive_observer"]
+        
+        # Simple loop detection: same node 3 times in a row
+        if len(history) >= 3 and len(set(history[-3:])) == 1:
+            logger.warning(f"Metacognitor: Loop detected in node '{history[-1]}'. Forcing redirection.")
+            state.error = f"Metacognitive Redirect: Loop detected in {history[-1]}"
+            state.next_node = "observing" # Back to human for intervention
+            return state
+
+        # Return to the planned path
+        state.next_node = state.variables.get("planned_next_node", "END")
+        return state
+
     async def run_graph(self, initial_state: AgentState) -> AgentState:
         """Executes the graph deterministically until reaching the END node or max transitions."""
+        start_time = time.time()
         
+        # Ensure memory is initialized
+        if self.memory_manager.memory is None:
+            await self.memory_manager.initialize()
+
         # 1. Resume Memory Check (GUIDE Section 13.1)
         if self.memory_manager.memory.resume:
             logger.info("Orchestrator: Found Resume Memory. Handling re-entry...")
@@ -150,7 +222,7 @@ class StateGraphOrchestrator(BaseAgent):
             resume_entry = self.memory_manager.memory.resume
             initial_state.add_message("system", f"RESUMING TASK: {resume_entry.content}")
             # Clear resume after loading
-            self.memory_manager.clear(lanes=[MemoryLane.RESUME])
+            await self.memory_manager.clear(lanes=[MemoryLane.RESUME])
 
         current_node_name = initial_state.current_node
         state = initial_state
@@ -194,9 +266,13 @@ class StateGraphOrchestrator(BaseAgent):
                  break
 
             # 2. Determine Next Edge
-            next_node = "END" # Default to ending if no edge defined
+            next_node = "END" 
             
-            if current_node_name in self.edges:
+            # If the node explicitly set a next_node, respect it (Phase 8 Support)
+            if state.next_node and state.next_node != current_node_name:
+                next_node = state.next_node
+                state.next_node = None # Consume it
+            elif current_node_name in self.edges:
                 edge_logic = self.edges[current_node_name]
                 
                 if '_conditional' in edge_logic:
@@ -208,7 +284,20 @@ class StateGraphOrchestrator(BaseAgent):
                 elif 'always' in edge_logic:
                     # Execute direct edge
                     next_node = edge_logic['always']
-                    
+            
+            # PHASE 8: Metacognitive Interception
+            if current_node_name != "metacognitive_observer" and next_node != "END":
+                # Only intercept if moving between nodes
+                state.variables["planned_next_node"] = next_node
+                # Track node history for loop detection
+                history = state.variables.get("node_history", [])
+                history.append(current_node_name)
+                state.variables["node_history"] = history
+                
+                # Check if we should call Metacognitor (transparently)
+                if "metacognitive_observer" in self.nodes:
+                    next_node = "metacognitive_observer"
+
             current_node_name = next_node
             state.next_node = next_node
             transitions += 1
@@ -218,5 +307,9 @@ class StateGraphOrchestrator(BaseAgent):
                  cli.stop_progress(success=False, msg=state.error)
             else:
                  cli.stop_progress(success=True, msg="Graph Execution Complete")
-                 
+        
+        # Record metrics (Phase 6)
+        latency = time.time() - start_time
+        await metrics_service.record_request(latency, success=(not state.error))
+        
         return state

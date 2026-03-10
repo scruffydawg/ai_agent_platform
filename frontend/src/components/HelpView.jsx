@@ -37,7 +37,7 @@ const HelpView = ({ topic, onClearTopic }) => {
           <h4 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><Network size={18} color="var(--accent-cyan)" /> GUIDE VIEWS</h4>
           <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <li><strong>Observer:</strong> Chat with the swarm directly.</li>
-            <li><strong>Logical Graph:</strong> Visual agent node map (React Flow).</li>
+
             <li><strong>Research Canvas:</strong> Infinite tldraw whiteboard for ideas.</li>
             <li><strong>Swarm Mind:</strong> Real-time Tailnet node telemetry.</li>
           </ul>

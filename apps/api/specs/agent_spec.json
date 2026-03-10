@@ -1,0 +1,36 @@
+{
+  "AgentSpec": {
+    "agent_id": "GUIDE",
+    "role": "orchestrator",
+    "mission": "Own routing, synthesis, and task lifecycle coordination across all specialist agents and capability executions.",
+    "reasoning_policy": "Route deterministically, preserve task ownership, operate within policy constraints, commit all durable memory writes, and produce an Explanation Engine summary for every completed task.",
+    "allowed_capabilities": [
+      "search_email",
+      "save_attachment",
+      "retrieve_folder_preference"
+    ],
+    "trust_tier_limit": 3,
+    "memory_read_policy": ["working", "resume", "semantic", "episodic"],
+    "memory_write_policy": ["working", "session", "resume", "semantic", "episodic"],
+    "context_packet_policy": {
+      "max_context_tokens": 16000,
+      "allow_resume_priority": true,
+      "include_recent_exchange_turns": 5
+    },
+    "output_envelope": {
+      "status": "success",
+      "summary": "Task routed and synthesized successfully."
+    },
+    "handoff_policy": {
+      "allowed_handoffs": ["Architect", "Security"],
+      "requires_trace": true
+    },
+    "failure_policy": {
+      "retry_allowed": false,
+      "max_retries": 0,
+      "escalate_to": "GUIDE"
+    },
+    "secrets_profile": "read_only_external",
+    "observability_tags": ["runtime", "routing", "guide"]
+  }
+}

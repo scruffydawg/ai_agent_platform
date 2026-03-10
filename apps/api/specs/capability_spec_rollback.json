@@ -1,0 +1,38 @@
+{
+  "CapabilitySpec": {
+    "capability_name": "delete_saved_file",
+    "type": "tool",
+    "description": "Delete a previously saved file from the document store. Used exclusively as the rollback capability for save_attachment. Validates file checksum before deletion to ensure the correct file is removed.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "saved_path": { "type": "string", "description": "Full path of the file to delete. Must match the saved_path from the original save_attachment result." },
+        "checksum_sha256": { "type": "string", "description": "SHA-256 checksum of the file to delete. Validated before deletion to prevent accidental removal of wrong file." },
+        "original_trace_id": { "type": "string", "description": "Trace ID of the save_attachment execution being rolled back. Written to audit log." }
+      },
+      "required": ["saved_path", "checksum_sha256", "original_trace_id"]
+    },
+    "output_schema": {
+      "type": "object",
+      "properties": {
+        "deleted_path": { "type": "string", "description": "Path of the deleted file. Confirms what was removed." },
+        "rollback_verified": { "type": "boolean", "description": "True if checksum matched and file was successfully deleted." }
+      },
+      "required": ["deleted_path", "rollback_verified"]
+    },
+    "trust_tier": 3,
+    "timeout_seconds": 15,
+    "retry_policy": {
+      "max_retries": 0,
+      "retry_on": [],
+      "backoff_seconds": 0
+    },
+    "side_effect_class": "external_mutation",
+    "rollback_policy": {
+      "rollback_supported": false
+    },
+    "idempotency": "idempotent",
+    "secrets_required": ["document_store_api_key"],
+    "observability_tags": ["file_delete", "rollback", "external_mutation", "tier_3"]
+  }
+}

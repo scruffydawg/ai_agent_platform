@@ -1,0 +1,15 @@
+{
+  "DecisionRecord": {
+    "decision_id": "dec_001",
+    "agent_id": "GUIDE",
+    "capability": "search_email",
+    "policy_reference": "email_access_tier_2",
+    "policy_reference_validated": true,
+    "timestamp": "2026-03-09T12:00:00Z",
+    "confidence": 0.88,
+    "routing_rationale": "Task objective matched email retrieval pattern. Capability search_email selected as read_only tier-2 match. No security review required. No specialist agent required. Risk score 0.12 — below policy threshold 0.40.",
+    "route_mode": "capability_execution",
+    "risk_score": 0.12,
+    "trace_level": "developer_trace"
+  }
+}

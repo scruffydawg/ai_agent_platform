@@ -1,5 +1,5 @@
 import os
-from openai import OpenAI
+from openai import AsyncOpenAI
 from typing import List, Dict, Any, Optional
 from src.core.state import state_manager
 from src.config import LLM_BASE_URL, LLM_ENGINE
@@ -19,27 +19,32 @@ class LLMClient:
         
         if self.provider in ["openai", "ollama"]:
              # We use the openai client for both OpenAI, and local Ollama if base_url is set.
-            self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+            self.client = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url)
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
 
-    def generate(self, messages: List[Dict[str, str]], timeout: int = 60) -> Optional[str]:
-        """
-        Calls the LLM with a strict timeout. Checks global kill switch before call.
-        """
-        if state_manager.is_halted():
-             print("[LLMClient] System halted. Aborting LLM call.")
-             return None
-             
+    async def generate_async(self, messages: List[Dict[str, str]], timeout: int = 60) -> Optional[str]:
+        """Async version of generate."""
+        if state_manager.is_halted(): return None
         try:
-            # Note: We simulate a timeout capability if the library doesn't expose it directly
-            # For this MVP, we rely on the provider's default timeout or passing it to the client config
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 timeout=timeout
             )
             return response.choices[0].message.content
         except Exception as e:
-            print(f"[LLMClient] Generation failed: {e}")
+            print(f"[LLMClient] Async generation failed: {e}")
             return None
+
+    async def get_embeddings(self, text: str, model: str = "text-embedding-3-small") -> List[float]:
+        """Generates embeddings for the given text."""
+        try:
+            response = await self.client.embeddings.create(
+                model=model,
+                input=text
+            )
+            return response.data[0].embedding
+        except Exception as e:
+            print(f"[LLMClient] Embedding failed: {e}")
+            return [0.0] * 1536 # Fallback zero vector

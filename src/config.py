@@ -11,6 +11,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 # Define standard directories
 DEFAULT_STORAGE_ROOT = Path(os.environ.get("GUIDE_STORAGE_ROOT", str(Path.home() / "guide_storage")))
 MEMORY_DIR = DEFAULT_STORAGE_ROOT / "data" / "memory"
+SWARM_FLOW_FILE = DEFAULT_STORAGE_ROOT / "data" / "swarm_flow.json"
+SWARM_FLOW_FILE = DEFAULT_STORAGE_ROOT / "data" / "swarm_flow.json"
 
 # Ensure data directories exist
 MEMORY_DIR.mkdir(parents=True, exist_ok=True)

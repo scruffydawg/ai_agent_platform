@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://guide.local/schemas/contextpacket.schema.json",
+  "title": "ContextPacket",
+  "description": "Formal validation schema for GUIDE agent context packets. R5 — policy_reference now required in policy_constraints.",
+  "type": "object",
+  "properties": {
+    "ContextPacket": {
+      "type": "object",
+      "properties": {
+        "packet_id": { "type": "string", "minLength": 1 },
+        "task": {
+          "type": "object",
+          "properties": {
+            "task_id": { "type": "string", "minLength": 1 },
+            "objective": { "type": "string", "minLength": 5 },
+            "task_depth": { "type": "integer", "minimum": 0, "maximum": 4 },
+            "parent_task_id": { "type": ["string", "null"] }
+          },
+          "required": ["task_id", "objective"],
+          "additionalProperties": false
+        },
+        "runtime_state": {
+          "type": "object",
+          "properties": {
+            "task_stage": { "type": "string", "minLength": 1 },
+            "percent_complete": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "next_action": { "type": "string", "minLength": 1 },
+            "remaining_steps": { "type": "array", "items": { "type": "string" } },
+            "resume_state_expires_at": { "type": ["string", "null"], "format": "date-time" }
+          },
+          "required": ["task_stage", "percent_complete", "next_action"],
+          "additionalProperties": false
+        },
+        "recent_exchange": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string", "enum": ["user", "assistant", "system"] },
+              "content": { "type": "string", "minLength": 1 }
+            },
+            "required": ["role", "content"],
+            "additionalProperties": false
+          }
+        },
+        "memory": {
+          "type": "object",
+          "properties": {
+            "working": { "type": "object", "additionalProperties": true },
+            "resume": {
+              "type": "object",
+              "properties": {
+                "available": { "type": "boolean" },
+                "checkpoint_id": { "type": ["string", "null"] },
+                "checkpoint_summary": { "type": ["string", "null"] }
+              },
+              "required": ["available"],
+              "additionalProperties": false
+            },
+            "semantic": { "type": "object", "additionalProperties": true },
+            "episodic": { "type": "object", "additionalProperties": true }
+          },
+          "required": ["working", "resume", "semantic", "episodic"],
+          "additionalProperties": false
+        },
+        "retrieved_knowledge": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": { "type": "string" },
+              "content": { "type": "string" },
+              "relevance_score": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "required": ["source", "content"],
+            "additionalProperties": false
+          }
+        },
+        "policy_constraints": {
+          "type": "object",
+          "properties": {
+            "trust_tier_limit": { "type": "integer", "minimum": 1, "maximum": 4 },
+            "blocked_actions": { "type": "array", "items": { "type": "string" } },
+            "policy_reference": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Policy rule ID from Policy Registry. Required. Validated against registry at routing time — packets with unregistered references are rejected."
+            }
+          },
+          "required": ["trust_tier_limit", "blocked_actions", "policy_reference"],
+          "additionalProperties": false
+        },
+        "trace_metadata": {
+          "type": "object",
+          "properties": {
+            "request_id": { "type": "string", "minLength": 1 },
+            "route_id": { "type": "string", "minLength": 1 },
+            "session_id": { "type": ["string", "null"] },
+            "trace_level": {
+              "type": "string",
+              "enum": ["user_summary", "developer_trace", "governance_audit"],
+              "default": "developer_trace"
+            }
+          },
+          "required": ["request_id", "route_id"],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "packet_id", "task", "runtime_state", "recent_exchange",
+        "memory", "retrieved_knowledge", "policy_constraints", "trace_metadata"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": ["ContextPacket"],
+  "additionalProperties": false
+}

@@ -1,0 +1,39 @@
+{
+  "ContextPacket": {
+    "packet_id": "pkt_001",
+    "task": {
+      "task_id": "task_001",
+      "objective": "Find the latest invoice email from Bob and save the PDF attachment to the Invoices/2026 folder.",
+      "task_depth": 0,
+      "parent_task_id": null
+    },
+    "runtime_state": {
+      "task_stage": "search_email",
+      "percent_complete": 25,
+      "next_action": "locate_message",
+      "remaining_steps": ["locate_message", "verify_attachment", "save_to_folder", "confirm_save"],
+      "resume_state_expires_at": "2026-03-16T12:00:00Z"
+    },
+    "recent_exchange": [
+      { "role": "user", "content": "Find the latest invoice email from Bob." }
+    ],
+    "memory": {
+      "working": { "current_step": "email_search" },
+      "resume": { "available": false, "checkpoint_id": null, "checkpoint_summary": null },
+      "semantic": { "preferred_invoice_folder": "Invoices/2026" },
+      "episodic": { "prior_success_pattern": "search then save attachment" }
+    },
+    "retrieved_knowledge": [],
+    "policy_constraints": {
+      "trust_tier_limit": 3,
+      "blocked_actions": [],
+      "policy_reference": "email_access_tier_2"
+    },
+    "trace_metadata": {
+      "request_id": "req_001",
+      "route_id": "route_001",
+      "session_id": "sess_abc",
+      "trace_level": "developer_trace"
+    }
+  }
+}

@@ -23,6 +23,8 @@
 3. Verify all 7 core V2 endpoints with 100% success
 4. Create comprehensive V2 Architecture & Migration documentation
 5. Standardize Tool Registry (Skills + MCP) response envelopes
+6. **Advanced Tooling (Phase 7)**: Refactored workplace skills (G-Drive, O365) to async and decoupled security tokens.
+7. **Swarm Intelligence (Phase 8)**: Implemented Metacognitor persona, loop detection, and recursive swarm support.
 
 ---
 

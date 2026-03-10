@@ -1,0 +1,56 @@
+{
+  "CapabilitySpec": {
+    "capability_name": "search_email",
+    "type": "tool",
+    "description": "Search mailbox for recent messages matching sender and subject constraints.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "sender": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "sender",
+        "query"
+      ]
+    },
+    "output_schema": {
+      "type": "object",
+      "properties": {
+        "messages": {
+          "type": "array"
+        },
+        "count": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "messages",
+        "count"
+      ]
+    },
+    "trust_tier": 2,
+    "timeout_seconds": 10,
+    "retry_policy": {
+      "max_retries": 1,
+      "retry_on": [
+        "timeout",
+        "transient_error"
+      ]
+    },
+    "side_effect_class": "read_only",
+    "observability_tags": [
+      "email",
+      "read_only",
+      "search"
+    ]
+  }
+}

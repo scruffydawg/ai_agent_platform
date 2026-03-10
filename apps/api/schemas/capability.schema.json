@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://guide.local/schemas/capability.schema.json",
+  "title": "CapabilitySpec",
+  "description": "Formal validation schema for GUIDE capability definitions. R5 — rollback_capability conditionally required via if/then when rollback_supported=true.",
+  "type": "object",
+  "properties": {
+    "CapabilitySpec": {
+      "type": "object",
+      "properties": {
+        "capability_name": {
+          "type": "string", "minLength": 1, "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "type": {
+          "type": "string", "enum": ["skill", "tool", "mcp", "hybrid"]
+        },
+        "description": { "type": "string", "minLength": 10 },
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "const": "object" },
+            "properties": { "type": "object", "minProperties": 1 },
+            "required": { "type": "array", "items": { "type": "string" } }
+          },
+          "required": ["type", "properties"],
+          "additionalProperties": false
+        },
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "const": "object" },
+            "properties": { "type": "object", "minProperties": 1 },
+            "required": { "type": "array", "items": { "type": "string" } }
+          },
+          "required": ["type", "properties"],
+          "additionalProperties": false
+        },
+        "trust_tier": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 300 },
+        "retry_policy": {
+          "type": "object",
+          "properties": {
+            "max_retries": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "retry_on": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["timeout", "transient_error", "rate_limit"] }
+            },
+            "backoff_seconds": { "type": "integer", "minimum": 0, "maximum": 60, "default": 2 }
+          },
+          "required": ["max_retries", "retry_on"],
+          "additionalProperties": false
+        },
+        "side_effect_class": {
+          "type": "string", "enum": ["read_only", "local_mutation", "external_mutation"]
+        },
+        "rollback_policy": {
+          "type": "object",
+          "properties": {
+            "rollback_supported": { "type": "boolean" },
+            "rollback_capability": {
+              "type": "string",
+              "description": "Capability name to invoke for rollback. Required when rollback_supported is true."
+            },
+            "rollback_window_seconds": { "type": "integer", "minimum": 0 }
+          },
+          "required": ["rollback_supported"],
+          "if": {
+            "properties": { "rollback_supported": { "const": true } }
+          },
+          "then": {
+            "required": ["rollback_supported", "rollback_capability", "rollback_window_seconds"],
+            "properties": {
+              "rollback_capability": { "type": "string", "minLength": 1 },
+              "rollback_window_seconds": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "additionalProperties": false,
+          "description": "Rollback semantics. Required for external_mutation capabilities. When rollback_supported=true, rollback_capability and rollback_window_seconds are required."
+        },
+        "idempotency": {
+          "type": "string", "enum": ["idempotent", "non_idempotent", "conditional"]
+        },
+        "secrets_required": {
+          "type": "array", "items": { "type": "string" }
+        },
+        "observability_tags": {
+          "type": "array", "items": { "type": "string" }, "minItems": 1
+        }
+      },
+      "required": [
+        "capability_name", "type", "description",
+        "input_schema", "output_schema",
+        "trust_tier", "timeout_seconds", "retry_policy",
+        "side_effect_class", "idempotency", "observability_tags"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": ["CapabilitySpec"],
+  "additionalProperties": false
+}

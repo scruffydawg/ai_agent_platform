@@ -87,6 +87,14 @@ const CanvasPanel = ({ showFull, onToggleFull, isCollapsed, onRestore, isSmall }
       const finalMeta = pushedMetadata || meta || {};
       setMetadata(finalMeta);
       
+      if (finalMode === 'MANIFESTATION') {
+        // Manifestation payload is a UIScreen object
+        // We'll set the content to the UIScreen object directly if it matches the schema
+        if (payload?.components || pushedContent?.components) {
+          setContent(payload || pushedContent);
+        }
+      }
+      
       // Save to history
       if (finalContent || finalMeta.filename) {
         setHistory(prev => {
@@ -162,7 +170,7 @@ const CanvasPanel = ({ showFull, onToggleFull, isCollapsed, onRestore, isSmall }
       case 'MD':
         return (
           <div className="markdown-body" style={{ padding: '40px', height: '100%', overflowY: 'auto', background: 'var(--panel-bg)', color: 'var(--text-primary)' }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || ''}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{typeof content === 'string' ? content : JSON.stringify(content, null, 2)}</ReactMarkdown>
           </div>
         );
       case 'CODE':
@@ -207,10 +215,46 @@ const CanvasPanel = ({ showFull, onToggleFull, isCollapsed, onRestore, isSmall }
             style={{ width: '100%', height: '100%', border: 'none', background: 'white' }} 
           />
         );
+      case 'MANIFESTATION':
+        return (
+          <div style={{ 
+            height: '100%', overflowY: 'auto', padding: '20px', 
+            background: 'var(--panel-bg)', display: 'flex', flexDirection: 'column', gap: '20px' 
+          }}>
+            <h2 style={{ color: 'var(--accent-ochre)', marginBottom: '10px' }}>{content?.title || 'Agent Manifestation'}</h2>
+            <div style={{ 
+              display: content?.layout === 'bento' ? 'grid' : 'flex',
+              gridTemplateColumns: content?.layout === 'bento' ? 'repeat(auto-fill, minmax(300px, 1fr))' : 'none',
+              flexDirection: content?.layout === 'bento' ? 'row' : 'column',
+              gap: '15px'
+            }}>
+              {content?.components?.map(comp => (
+                <div key={comp.id} className="card" style={{ 
+                  padding: '15px', background: 'var(--bg-color)', border: '1px solid var(--border-color)',
+                  borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                }}>
+                  <h3 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {comp.type === 'list' && <FileText size={14} />}
+                    {comp.label}
+                  </h3>
+                  {comp.type === 'list' && Array.isArray(comp.content) ? (
+                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                      {comp.content.map((item, idx) => <li key={idx} style={{ padding: '4px 0', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}>{String(item)}</li>)}
+                    </ul>
+                  ) : comp.type === 'json' ? (
+                    <pre style={{ fontSize: '0.8rem', opacity: 0.8, overflowX: 'auto' }}>{JSON.stringify(comp.content, null, 2)}</pre>
+                  ) : (
+                    <div style={{ fontSize: '1rem', lineHeight: 1.5 }}>{String(comp.content)}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
       default:
         return (
           <div className="markdown-body" style={{ padding: '40px', height: '100%', overflowY: 'auto', background: 'var(--panel-bg)', color: 'var(--text-primary)' }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || ''}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{typeof content === 'string' ? content : JSON.stringify(content, null, 2)}</ReactMarkdown>
           </div>
         );
     }

@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://guide.local/schemas/agent.schema.json",
+  "title": "AgentSpec",
+  "description": "Formal validation schema for GUIDE agent definitions. R5 — role-based trust ceiling enforced via if/then: orchestrator<=4, specialist<=2, reviewer<=2.",
+  "type": "object",
+  "properties": {
+    "AgentSpec": {
+      "type": "object",
+      "properties": {
+        "agent_id": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+        "role": {
+          "type": "string",
+          "enum": ["orchestrator", "specialist", "reviewer"],
+          "description": "Agent role class. Determines trust ceiling enforced by if/then below."
+        },
+        "mission": { "type": "string", "minLength": 10 },
+        "reasoning_policy": { "type": "string", "minLength": 10 },
+        "allowed_capabilities": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "pattern": "^[a-z][a-z0-9_]*$" }
+        },
+        "trust_tier_limit": {
+          "type": "integer", "minimum": 1, "maximum": 4,
+          "description": "Maximum trust tier this agent may invoke. Ceiling enforced by role via if/then: orchestrator<=4, specialist<=2, reviewer<=2."
+        },
+        "memory_read_policy": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["working", "resume", "semantic", "episodic"] }
+        },
+        "memory_write_policy": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["working", "session", "resume", "semantic", "episodic"] }
+        },
+        "context_packet_policy": {
+          "type": "object",
+          "properties": {
+            "max_context_tokens": { "type": "integer", "minimum": 1000, "maximum": 32000 },
+            "allow_resume_priority": { "type": "boolean" },
+            "include_recent_exchange_turns": { "type": "integer", "minimum": 0, "maximum": 20, "default": 5 }
+          },
+          "required": ["max_context_tokens", "allow_resume_priority"],
+          "additionalProperties": false
+        },
+        "output_envelope": {
+          "type": "object",
+          "properties": {
+            "status": { "type": "string", "enum": ["success", "partial", "failed", "escalated", "clarification_needed"] },
+            "summary": { "type": "string", "minLength": 1 }
+          },
+          "required": ["status", "summary"],
+          "additionalProperties": false
+        },
+        "handoff_policy": {
+          "type": "object",
+          "properties": {
+            "allowed_handoffs": { "type": "array", "items": { "type": "string" } },
+            "requires_trace": { "type": "boolean" }
+          },
+          "required": ["allowed_handoffs", "requires_trace"],
+          "additionalProperties": false
+        },
+        "failure_policy": {
+          "type": "object",
+          "properties": {
+            "retry_allowed": { "type": "boolean" },
+            "max_retries": { "type": "integer", "minimum": 0, "maximum": 3, "default": 0 },
+            "escalate_to": { "type": "string" }
+          },
+          "required": ["retry_allowed", "escalate_to"],
+          "additionalProperties": false
+        },
+        "secrets_profile": {
+          "type": "string",
+          "enum": ["none", "read_only_external", "read_write_external"],
+          "default": "none"
+        },
+        "observability_tags": {
+          "type": "array", "items": { "type": "string" }, "minItems": 1
+        }
+      },
+      "required": [
+        "agent_id", "role", "mission", "reasoning_policy",
+        "allowed_capabilities", "trust_tier_limit",
+        "memory_read_policy", "memory_write_policy",
+        "context_packet_policy", "output_envelope",
+        "handoff_policy", "failure_policy", "observability_tags"
+      ],
+      "if": {
+        "properties": { "role": { "enum": ["specialist", "reviewer"] } }
+      },
+      "then": {
+        "properties": {
+          "trust_tier_limit": { "type": "integer", "minimum": 1, "maximum": 2 }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["AgentSpec"],
+  "additionalProperties": false
+}

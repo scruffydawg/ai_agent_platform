@@ -18,16 +18,20 @@ class BaseAgent:
         self.llm = LLMClient(model=model)
         self.max_loops = 5 # Safety limit to prevent dead loops
         
-    def observe(self, incoming_data: str) -> str:
+    async def observe(self, incoming_data: str) -> str:
         """Parses incoming data or sensory input."""
         return f"Observation: {incoming_data}"
 
-    def reason(self, observation: str) -> Optional[str]:
+    async def reason(self, observation: str) -> Optional[str]:
         """Calls the LLM to decide the next action based on context."""
         if state_manager.is_halted():
              return None
              
-        self.memory.add_message("user", observation)
+        # Initialize memory if not already done
+        if self.memory.memory is None:
+            await self.memory.initialize()
+
+        await self.memory.add_message("user", observation)
         
         # Inject learned patterns into the context
         learnings = self.memory.get_learning_summary()
@@ -39,23 +43,27 @@ class BaseAgent:
         messages.extend(self.memory.get_messages(limit=10)[1:]) # Avoid double system prompt
         
         # Timeout and kill switch are enforced inside the LLMClient layer
-        response = self.llm.generate(messages)
+        response = await self.llm.generate_async(messages)
         
         if response:
-             self.memory.add_message("assistant", response)
+             await self.memory.add_message("assistant", response)
              
         return response
 
-    def act(self, plan: str) -> Dict[str, Any]:
+    async def act(self, plan: str) -> Dict[str, Any]:
         """Executes the plan. (To be overridden by subclasses with specific skills)"""
         # In base agent, we just return the plan as the action.
         return {"status": "success", "action": "raw_response", "data": plan}
 
-    def run(self, initial_input: str) -> Dict[str, Any]:
+    async def run(self, initial_input: str) -> Dict[str, Any]:
         """Executes the core agent loop with strict limits."""
         loop_count = 0
         current_input = initial_input
         final_result = None
+
+        # Ensure memory is initialized
+        if self.memory.memory is None:
+            await self.memory.initialize()
 
         while loop_count < self.max_loops:
             if state_manager.is_halted():
@@ -65,10 +73,10 @@ class BaseAgent:
             print(f"[{self.agent_id}] Loop {loop_count} starting...")
             
             # Step 1: Observe
-            observation = self.observe(current_input)
+            observation = await self.observe(current_input)
             
             # Step 2: Reason
-            plan = self.reason(observation)
+            plan = await self.reason(observation)
             
             if not plan: # usually happens if LLM fails or system halts
                 return {"status": "error", "message": "Failed to generate plan."}
@@ -77,18 +85,18 @@ class BaseAgent:
                 
             # Step 3: Act
             try:
-                result = self.act(plan)
+                result = await self.act(plan)
                 recovery_manager.clear_errors(self.session_id)
                 
                 # Phase 13: Extract learning insight from successful action
                 if result.get("status") == "success":
                     insight_prompt = f"Based on the following action and result, what is a single concise fact learned about the user's preference or the environment? (Format: One sentence starting with 'The user...' or 'The system...')\n\nAction: {plan}\nResult: {result}"
-                    insight = self.llm.generate([{"role": "system", "content": "You are a learning observer."}, {"role": "user", "content": insight_prompt}])
+                    insight = await self.llm.generate_async([{"role": "system", "content": "You are a learning observer."}, {"role": "user", "content": insight_prompt}])
                     if insight:
                         if "user" in insight.lower():
-                            self.memory.record_user_learn(insight, context=f"Action: {plan}")
+                            await self.memory.record_user_learn(insight, context=f"Action: {plan}")
                         else:
-                            self.memory.record_self_learn(insight, context=f"Action: {plan}")
+                            await self.memory.record_self_learn(insight, context=f"Action: {plan}")
             except Exception as e:
                 error_trace = traceback.format_exc()
                 print(f"[{self.agent_id}] Tool exception caught: {e}")
@@ -98,7 +106,7 @@ class BaseAgent:
                     return {"status": "blocked", "message": f"Circuit Broken! Escalating to human.\nError: {str(e)}", "traceback": error_trace}
                 
                 ouch_message = f"[SYSTEM ERROR] Your previous action failed with:\n{error_trace}\nPlease analyze this failure and try an alternative approach."
-                self.memory.add_message("system", ouch_message)
+                await self.memory.add_message("system", ouch_message)
                 
                 current_input = ouch_message
                 loop_count += 1

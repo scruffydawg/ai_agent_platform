@@ -1,0 +1,42 @@
+{
+  "CapabilitySpec": {
+    "capability_name": "save_attachment",
+    "type": "tool",
+    "description": "Save an email attachment to a specified folder in the document store. Creates the folder if it does not exist. This is an external_mutation capability — the write is durable and requires rollback support.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "message_id": { "type": "string", "description": "Email message ID from which to extract the attachment." },
+        "attachment_index": { "type": "integer", "minimum": 0, "description": "Zero-based index of the attachment to save." },
+        "target_folder": { "type": "string", "description": "Destination folder path. Created if it does not exist." },
+        "filename_override": { "type": ["string", "null"], "description": "Optional filename. If null, uses original attachment filename." }
+      },
+      "required": ["message_id", "attachment_index", "target_folder"]
+    },
+    "output_schema": {
+      "type": "object",
+      "properties": {
+        "saved_path": { "type": "string", "description": "Full path of the saved file." },
+        "file_size_bytes": { "type": "integer" },
+        "checksum_sha256": { "type": "string", "description": "SHA-256 checksum of saved file. Used to verify rollback." }
+      },
+      "required": ["saved_path", "file_size_bytes", "checksum_sha256"]
+    },
+    "trust_tier": 3,
+    "timeout_seconds": 30,
+    "retry_policy": {
+      "max_retries": 1,
+      "retry_on": ["timeout", "transient_error"],
+      "backoff_seconds": 5
+    },
+    "side_effect_class": "external_mutation",
+    "rollback_policy": {
+      "rollback_supported": true,
+      "rollback_capability": "delete_saved_file",
+      "rollback_window_seconds": 300
+    },
+    "idempotency": "conditional",
+    "secrets_required": ["document_store_api_key"],
+    "observability_tags": ["email", "file_write", "external_mutation", "tier_3"]
+  }
+}

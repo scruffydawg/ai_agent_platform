@@ -16,7 +16,7 @@ const MemoryInspector = ({ contextPacket }) => {
     <div className="memory-inspector" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
         <Brain size={24} color="var(--accent-ochre)" />
-        <h2 style={{ fontSize: '1.2rem', fontWeight: '900', margin: 0 }}>CONTEXT PACKET (GUIDE v3.0)</h2>
+        <h2 style={{ fontSize: '1.2rem', fontWeight: '900', margin: 0 }}>CONTEXT PACKET (GUIDE v5.0)</h2>
       </div>
 
       <p style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '15px' }}>
@@ -26,9 +26,10 @@ const MemoryInspector = ({ contextPacket }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {contextPacket.map((item, idx) => {
           const isSystem = item.role === 'system';
-          const isKnowledge = item.content.includes('[KNOWLEDGE]');
-          const isWorking = item.content.includes('[WORKING]');
-          const isResume = item.content.includes('[RESUME]');
+          const contentStr = item.content || '';
+          const isKnowledge = contentStr.includes('[KNOWLEDGE]');
+          const isWorking = contentStr.includes('[WORKING]');
+          const isResume = contentStr.includes('[RESUME]');
 
           return (
             <motion.div 
@@ -54,29 +55,46 @@ const MemoryInspector = ({ contextPacket }) => {
                     background: isKnowledge ? 'var(--accent-cyan)' : isWorking ? 'var(--accent-ochre)' : 'var(--border-color)',
                     color: (isKnowledge || isWorking) ? 'var(--overlay-heavy-bg)' : 'var(--text-primary)'
                   }}>
-                    {isKnowledge ? 'SEMANTIC' : isWorking ? 'WORKING' : isResume ? 'RESUME' : item.role.toUpperCase()}
+                    {item.lane ? item.lane.toUpperCase() : (isKnowledge ? 'SEMANTIC' : isWorking ? 'WORKING' : isResume ? 'RESUME' : item.role.toUpperCase())}
                   </span>
+                  {item.superseded_by && (
+                    <span style={{ 
+                      fontSize: '0.6rem', 
+                      background: 'var(--accent-red)', 
+                      color: 'white', 
+                      padding: '1px 5px', 
+                      borderRadius: '3px',
+                      fontWeight: 'bold'
+                    }}>
+                      SUPERSEDED
+                    </span>
+                  )}
                   <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>{new Date().toLocaleTimeString()}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                   <Pin size={12} style={{ opacity: 0.3, cursor: 'pointer' }} />
+                   <Pin size={12} style={{ opacity: item.pinned ? 1 : 0.3, cursor: 'pointer', color: item.pinned ? 'var(--accent-ochre)' : 'inherit' }} />
                    <Shield size={12} style={{ opacity: 0.3, cursor: 'pointer' }} />
                 </div>
               </div>
 
               <div style={{ fontSize: '0.85rem', lineHeight: '1.4', overflowWrap: 'anywhere' }}>
-                {item.content.replace(/^\[.*?\]:\s?/, '')}
+                {contentStr.replace(/^\[.*?\]:\s?/, '')}
               </div>
 
-              {/* Mock Metadata */}
-              {(isKnowledge || isWorking) && (
-                <div style={{ marginTop: '8px', display: 'flex', gap: '15px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
+              {/* v5 Metadata */}
+              {(item.lane === 'semantic' || item.lane === 'working' || isKnowledge || isWorking) && (
+                <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '15px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.6rem', opacity: 0.6 }}>
-                      <Tag size={10} /> CONFIDENCE: 1.0
+                      <Tag size={10} /> CONFIDENCE: {item.confidence || '1.0'}
                    </div>
                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.6rem', opacity: 0.6 }}>
-                      <Info size={10} /> SOURCE: LOCAL
+                      <Info size={10} /> SOURCE: {item.provenance?.generator || item.source || 'USER'}
                    </div>
+                   {item.superseded_by && (
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.6rem', opacity: 0.8, color: 'var(--accent-ochre)' }}>
+                        <Layers size={10} /> CHAIN: Updated by {item.superseded_by.substring(0,8)}...
+                     </div>
+                   )}
                 </div>
               )}
             </motion.div>

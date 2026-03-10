@@ -1,0 +1,24 @@
+{
+  "AgentResult": {
+    "status": "success",
+    "summary": "Email located and next action determined.",
+    "action": "capability_execution",
+    "data": {
+      "task_stage": "invoice_found"
+    },
+    "proposed_capability_call": {
+      "capability_name": "save_attachment",
+      "arguments": {
+        "target_folder": "Invoices/2026"
+      }
+    },
+    "proposed_memory_write": null,
+    "next_step": "download_attachment",
+    "confidence": 0.92,
+    "trace_tags": [
+      "guide",
+      "invoice",
+      "email"
+    ]
+  }
+}

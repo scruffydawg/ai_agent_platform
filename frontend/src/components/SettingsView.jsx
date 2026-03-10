@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Save, Server, Database, Globe, Folder, Info, Eye, Monitor, Camera } from 'lucide-react';
+import { Save, Server, Database, Globe, Folder, Info, Eye, Monitor, Camera, Activity } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE } from '../api.js';
 
@@ -46,25 +46,37 @@ const SettingsView = ({ onOpenHelp, onTriggerVision, onManualCam }) => {
     setSettings({ ...settings, [e.target.name]: value });
   };
 
+  const [saveStatus, setSaveStatus] = useState('idle');
+  const [initStatus, setInitStatus] = useState('idle');
+
   const handleSave = async () => {
     try {
+      setSaveStatus('saving');
       await axios.post(`${API_BASE}/config`, settings);
-      alert("Configuration Synthesized Successfully.");
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (e) {
-      alert("Failed to sync configuration with the mesh.");
+      console.error("Failed to sync configuration", e);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 2000);
     }
   };
 
   const handleInitStorage = async () => {
     try {
+      setInitStatus('saving');
       const resp = await axios.post(`${API_BASE}/storage/init?path=${settings.storagePath}`);
       if (resp.data.status === 'success') {
-        alert("Workspace Initialized Successfully!");
+        setInitStatus('success');
+        setTimeout(() => setInitStatus('idle'), 2000);
       } else {
-        alert("Error initializing workspace: " + resp.data.status);
+        setInitStatus('error');
+        setTimeout(() => setInitStatus('idle'), 2000);
       }
     } catch (e) {
-      alert("Failed to connect to server for storage init.");
+      console.error("Failed to init storage", e);
+      setInitStatus('error');
+      setTimeout(() => setInitStatus('idle'), 2000);
     }
   };
 
@@ -210,8 +222,8 @@ const SettingsView = ({ onOpenHelp, onTriggerVision, onManualCam }) => {
           </div>
         </div>
 
-        <button onClick={handleSave} className="btn-primary" style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
-          <Save size={18} /> SAVE CONFIGURATION
+        <button onClick={handleSave} className={`btn-primary ${saveStatus === 'success' ? 'bg-emerald-600 hover:bg-emerald-500' : saveStatus === 'error' ? 'bg-rose-600' : ''}`} style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', transition: 'all 0.3s ease' }}>
+          <Save size={18} /> {saveStatus === 'saving' ? 'SAVING...' : saveStatus === 'success' ? 'SAVED SUCCESSFULLY' : saveStatus === 'error' ? 'ERROR SAVING' : 'SAVE CONFIGURATION'}
         </button>
 
         <div className="card" style={{ marginTop: '32px', padding: '20px', background: 'var(--header-bg)' }}>

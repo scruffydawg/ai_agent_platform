@@ -96,7 +96,7 @@ async def delete_swarm_expert(name: str):
 @router.get("/flow", response_model=SuccessResponse)
 async def get_swarm_flow():
     """Returns the persisted graph structure (nodes & edges)."""
-    from src.server import SWARM_FLOW_FILE
+    from src.config import SWARM_FLOW_FILE
     if not SWARM_FLOW_FILE.exists():
         return SuccessResponse(data={"nodes": [], "edges": []})
     with open(SWARM_FLOW_FILE, "r") as f:
@@ -106,7 +106,7 @@ async def get_swarm_flow():
 @router.post("/flow", response_model=SuccessResponse)
 async def save_swarm_flow(request: Request):
     """Persists the graph structure from the ReactFlow UI."""
-    from src.server import SWARM_FLOW_FILE
+    from src.config import SWARM_FLOW_FILE
     data = await request.json()
     with open(SWARM_FLOW_FILE, "w") as f:
         json.dump(data, f, indent=4)

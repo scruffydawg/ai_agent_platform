@@ -39,55 +39,61 @@ class DynamicToolLoader:
             try:
                 module = importlib.import_module(module_name)
                 
-                # Check for instances of BaseSkill or specific entry points
-                # For simplicity, we look for explicit skill objects exported by convention,
-                # e.g., web_search, vision_skill, canvas_automation_skill
-                # or anything ending with `_skill` or specific names.
-                # Actually, let's look for any object that inherits from BaseSkill, OR specific names.
                 for attr_name in dir(module):
                     if attr_name.startswith("_"): continue
                     attr = getattr(module, attr_name)
                     
-                    # Heuristic: Find initialized skill objects (not classes)
-                    if attr_name in ["web_search", "vision_skill", "canvas_automation_skill", "docker_management"] or hasattr(attr, '__class__') and hasattr(attr.__class__, '__name__') and attr.__class__.__name__ != 'type' and 'Skill' in attr.__class__.__name__:
+                    is_skill = False
+                    try:
+                        if not inspect.isclass(attr) and hasattr(attr, '__class__'):
+                            mro_names = [b.__name__ for b in attr.__class__.__mro__]
+                            if "BaseSkill" in mro_names:
+                                is_skill = True
+                            elif hasattr(attr, 'side_effect_class') or hasattr(attr, 'rollback_policy'):
+                                is_skill = True
+                    except: pass
+
+                    if is_skill:
                         self._register_skill_instance(attr)
-                        break # Only register one valid skill instance per file
+                        # We allow multiple instances from one file if they exist, 
+                        # but usually it's just one.
             except Exception as e:
                 logger.error(f"Failed to load dynamic skill {module_name}: {e}")
 
     def _register_skill_instance(self, instance):
-        # We need to map specific entry methods.
-        # Fallback to duck typing: if it has 'search', 'take_screenshot', 'list_containers', 'push_to_canvas', 'run'
-        # Or we can just grab all public methods that don't start with _.
+        skill_name = getattr(instance, 'name', None)
+        
         for name, method in inspect.getmembers(instance, predicate=inspect.ismethod):
             if name.startswith("_"): continue
-            
-            # Skip common generic names overriden everywhere unless it's `run`
             if name in ["validate_requirements", "check_health"]:
                 continue
             
-            # Special case for FileSystemSkill to avoid registering generic "run" that takes varied args
+            # Use instance.name if method is 'run'
+            reg_name = name
+            if name == 'run' and skill_name:
+                reg_name = skill_name
+
+            # Special case for FileSystemSkill
             if hasattr(instance, '__class__') and instance.__class__.__name__ == 'FileSystemSkill' and name == 'run':
-                # File system has a generic run taking an action string. Let's just create a wrapper.
                 def read_file_wrapper(path: str):
                     return instance.run("read", path)
                 read_file_wrapper.__doc__ = "Read the text contents of a file in the workspace."
                 self._register_function("read_file", read_file_wrapper)
                 continue
                 
-            self._register_function(name, method)
+            self._register_function(reg_name, method)
 
     def _register_function(self, name, func):
-        if name in self.tool_functions: return # Prevent override
+        if name in self.tool_functions: return 
         
         try:
             sig = inspect.signature(func)
         except ValueError:
-            return  # Cannot signature built-ins
+            return  
             
         parameters = {"type": "object", "properties": {}, "required": []}
         for param_name, param in sig.parameters.items():
-            if param_name == "self" or param_name == "args" or param_name == "kwargs": continue
+            if param_name in ("self", "args", "kwargs"): continue
             
             param_type = "string"
             if param.annotation != inspect.Parameter.empty:
@@ -101,14 +107,23 @@ class DynamicToolLoader:
         if doc.strip():
             doc = doc.strip().split("\n")[0]
             
-        self.tool_schemas.append({
+        schema = {
             "type": "function",
             "function": {
                 "name": name,
                 "description": doc,
                 "parameters": parameters
             }
-        })
+        }
+        
+        # Add R5 security metadata
+        instance = getattr(func, '__self__', None)
+        if instance:
+            for field in ['trust_tier', 'side_effect_class', 'rollback_policy']:
+                if hasattr(instance, field):
+                    schema["function"][field] = getattr(instance, field)
+
+        self.tool_schemas.append(schema)
         self.tool_functions[name] = func
 
     def get_schemas(self):

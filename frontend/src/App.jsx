@@ -8,6 +8,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'framer-motion';
 import CanvasPanel from './components/CanvasPanel';
+import SettingsView from './components/SettingsView';
+import HelpView from './components/HelpView';
 import SystemsDashboard from './components/SwarmView';
 import SkillForge from './components/SkillForge';
 import ToolRegistry from './components/ToolRegistry';
@@ -37,6 +39,8 @@ const App = () => {
   const [showDashboardOverlay, setShowDashboardOverlay] = useState(false);
   const [showCanvas, setShowCanvas] = useState(false);
   const [showSessionsPane, setShowSessionsPane] = useState(false);
+  const [canvasSplitIndex, setCanvasSplitIndex] = useState(0);
+  const [showSidebar, setShowSidebar] = useState(true);
   const [resumeData, setResumeData] = useState(null);
   const [memoryLanes, setMemoryLanes] = useState(null);
   const messagesEndRef = useRef(null);
@@ -65,7 +69,7 @@ const App = () => {
   const fetchSessions = async () => {
     try {
       const resp = await axios.get(`${API_BASE}/sessions`);
-      const sessionsArr = resp.data.sessions || [];
+      const sessionsArr =  Array.isArray(resp.data.data) ? resp.data.data : (resp.data.sessions || []);
       setSessions(sessionsArr);
       return sessionsArr;
     } catch (e) {
@@ -93,7 +97,7 @@ const App = () => {
   const handleNewSession = async () => {
     try {
        const resp = await axios.post(`${API_BASE}/sessions/new`);
-       const newId = resp.data.session_id;
+       const newId = resp.data.data ? resp.data.data.session_id : resp.data.session_id;
        const newSession = { id: newId, title: "New Session", created_at: Date.now() / 1000, last_updated: Date.now() / 1000 };
        setCurrentSessionId(newId);
        setMessages([{ role: 'assistant', content: 'NEW SESSION INITIALIZED. I am your Guide. How shall we proceed?', id: Date.now() }]);
@@ -142,7 +146,8 @@ const App = () => {
     if (!id) return;
     try {
       const resp = await axios.get(`${API_BASE}/sessions/${id}`);
-      setMessages(resp.data.messages.length > 0 ? resp.data.messages : [{ role: 'assistant', content: 'SESSION RESTORED.', id: Date.now() }]);
+      const sessionData = resp.data.data || resp.data;
+      setMessages(sessionData.messages && sessionData.messages.length > 0 ? sessionData.messages : [{ role: 'assistant', content: 'SESSION RESTORED.', id: Date.now() }]);
       setCurrentSessionId(id);
       setActiveView('chat');
       checkResume(id);
@@ -155,10 +160,11 @@ const App = () => {
     if (!sessionId) return;
     try {
       const resp = await axios.post(`${API_BASE}/sessions/${sessionId}/message`, { role, content });
+      const newId = resp.data.data ? resp.data.data.session_id : resp.data.session_id;
       // If the backend renamed the session (autotitling), update local ID
-      if (resp.data.session_id && resp.data.session_id !== sessionId) {
-        console.log(`Session renamed: ${sessionId} -> ${resp.data.session_id}`);
-        setCurrentSessionId(resp.data.session_id);
+      if (newId && newId !== sessionId) {
+        console.log(`Session renamed: ${sessionId} -> ${newId}`);
+        setCurrentSessionId(newId);
         fetchSessions(); // Refresh sidebar to show new title
       }
     } catch (e) {
@@ -168,24 +174,47 @@ const App = () => {
 
   // Sync with Backend Heartbeat and Events
   useEffect(() => {
-    const ws = new WebSocket(`${WS_BASE}/stream`);
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'heartbeat') {
-        setIsHalted(data.halted);
-      } else if (data.type === 'canvas_push') {
-        // Broadcast custom event for CanvasPanel to pick up
-        const canvasEvent = new CustomEvent('canvas-push', { 
-          detail: { type: data.mode, payload: data.content, meta: data.metadata } 
-        });
-        window.dispatchEvent(canvasEvent);
-        
-        // Auto-open canvas
-        setShowCanvas(true);
-        setCanvasSplitIndex(3); // 25/75 split
-      }
+    let ws = null;
+    let reconnectTimeout = null;
+
+    const connect = () => {
+      ws = new WebSocket(`${WS_BASE}/stream`);
+      
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'heartbeat') {
+          setIsHalted(data.halted);
+        } else if (data.type === 'canvas_push') {
+          const canvasEvent = new CustomEvent('canvas-push', { 
+            detail: { type: data.mode, payload: data.content, meta: data.metadata } 
+          });
+          window.dispatchEvent(canvasEvent);
+          setShowCanvas(true);
+          setCanvasSplitIndex(3);
+        }
+      };
+
+      ws.onclose = () => {
+        reconnectTimeout = setTimeout(connect, 3000);
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        ws.close();
+      };
     };
-    return () => ws.close();
+
+    connect();
+
+    return () => {
+      if (ws) {
+        ws.onclose = null; // Prevent reconnect on intentional close
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          ws.close();
+        }
+      }
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    };
   }, []);
 
   const handleRun = async () => {
@@ -222,9 +251,10 @@ const App = () => {
       const decoder = new TextDecoder();
       
       // Add placeholder assistant message
-      setMessages(prev => [...prev, { role: 'assistant', content: '', id: assistantMsgId }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: '🧠 THINKING...', id: assistantMsgId }]);
 
       let buffer = '';
+      let isFirstChunk = true;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -240,6 +270,7 @@ const App = () => {
               if (!cleanedLine) continue;
               const data = JSON.parse(cleanedLine);
               if (data.content) {
+                if (isFirstChunk) { assistantReply = ''; isFirstChunk = false; }
                 // Ensure literal "\n" strings that survived JSON parsing are real newlines for Markdown
                 const parsedContent = data.content.replace(/\\n/g, '\n');
                 assistantReply += parsedContent;
@@ -259,8 +290,7 @@ const App = () => {
       setAgentStatus('idle');
 
       // Refresh sessions
-      const sResp = await axios.get(`${API_BASE}/sessions`);
-      setSessions(sResp.data.sessions);
+      await fetchSessions();
     } catch (error) {
       console.error('Chat error:', error);
       const errMsg = { 
@@ -418,7 +448,6 @@ const App = () => {
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
           {[
             { id: 'chat', icon: MessageSquare, label: 'Observer' },
-            { id: 'graph', icon: Activity, label: 'Logical Graph' },
             { id: 'knowledge', icon: Library, label: 'Knowledge Hub' },
             { id: 'swarm', icon: Network, label: 'Systems Dashboard' },
             { id: 'memory', icon: Brain, label: 'Memory Inspector' },
@@ -563,9 +592,9 @@ const App = () => {
                       const search = sessionSearch || '';
                       return title.toLowerCase().includes(search.toLowerCase()) || id.toLowerCase().includes(search.toLowerCase());
                     })
-                    .map(session => (
+                    .map((session, idx) => (
                     <div 
-                      key={session.id || Math.random()} 
+                      key={session.id || `session-${idx}`} 
                       onClick={() => {
                         loadSession(session.id);
                         setShowSessionsPane(false);
@@ -739,11 +768,11 @@ const App = () => {
                         }}>
                           <div className="messages-container" style={{ width: '100%', minWidth: 0 }}>
                             <AnimatePresence>
-                              {messages.map(msg => (
+                              {messages.map((msg, idx) => (
                                 <motion.div 
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  key={msg.id}
+                                  key={msg.id || `msg-${idx}`}
                                   style={{ 
                                     alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                                     maxWidth: '96%',
@@ -851,7 +880,7 @@ const App = () => {
             </div>
           )}
 
-          { activeView === 'graph' && <div className="flex-column-scroll" style={{ flex: 1, height: '100%' }}><GraphView onInfo={() => handleOpenHelp('graph')} /></div>}
+
           { activeView === 'swarm' && <div className="scroll-container" style={{ flex: 1 }}><SystemsDashboard /></div>}
           { activeView === 'registry' && <div className="scroll-container" style={{ flex: 1 }}><ToolRegistry /></div>}
           { activeView === 'knowledge' && <div className="scroll-container" style={{ flex: 1 }}><KnowledgeHub /></div>}

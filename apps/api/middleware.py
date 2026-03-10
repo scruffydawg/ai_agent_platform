@@ -3,7 +3,12 @@ import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from apps.api.middleware.resilience_middleware import ResilienceMiddleware
+from apps.api.middleware.rate_limit_middleware import RateLimitMiddleware
+
 def register_middleware(app: FastAPI) -> None:
+    app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
+    app.add_middleware(ResilienceMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],  # LAN-friendly
