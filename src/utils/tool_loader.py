@@ -4,6 +4,7 @@ import pkgutil
 from pathlib import Path
 from src.utils.logger import logger
 from src.config import DEFAULT_STORAGE_ROOT
+from src.services.safety_gate import safety_gate
 
 def _get_json_type(param_annotation):
     if param_annotation == int:
@@ -133,6 +134,16 @@ class DynamicToolLoader:
         if func_name not in self.tool_functions:
             return f"Error: Tool {func_name} not found in dynamic registry."
             
+        # SAFETY GATE INTERCEPTION
+        gate_result = await safety_gate.validate_and_track(func_name, args)
+        if not gate_result["allowed"]:
+            return f"Governance Rejection: {gate_result['reason']}"
+            
+        if gate_result.get("requires_approval"):
+            # In a production system, we'd pause here and wait for user approval.
+            # For now, we log and proceed, or we could return a specific status.
+            logger.info(f"Governance: Tool '{func_name}' is sensitive. Proceeding with audit trail.")
+
         func = self.tool_functions[func_name]
         try:
             if inspect.iscoroutinefunction(func):

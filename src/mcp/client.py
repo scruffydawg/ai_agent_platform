@@ -1,8 +1,8 @@
-import httpx
-import asyncio
-from typing import Any, Dict, List, Optional
-import json
 import os
+import httpx
+from typing import Any, Dict, List, Optional
+from src.services.safety_gate import safety_gate
+from src.utils.logger import logger
 
 class MCPClient:
     """
@@ -60,11 +60,19 @@ class MCPClient:
         ]
         return self.available_tools
 
-    def execute_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Routes a tool execution request to the external MCP server."""
         if not self.connected:
              return {"status": "error", "message": "Not connected to an MCP server."}
              
+        # SAFETY GATE INTERCEPTION
+        gate_result = await safety_gate.validate_and_track(tool_name, arguments)
+        if not gate_result["allowed"]:
+            return {"status": "error", "message": f"Governance Rejection: {gate_result['reason']}"}
+            
+        if gate_result.get("requires_approval"):
+            logger.info(f"Governance: MCP Tool '{tool_name}' is sensitive. Proceeding.")
+
         # In scaffolding, we mock execution
         print(f"[MCP] Executing {tool_name} with {arguments} on {self.server_url}")
         
