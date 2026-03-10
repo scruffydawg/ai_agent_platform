@@ -7,10 +7,22 @@ from typing import List, Dict, Any, Optional
 
 from src.config import MEMORY_DIR
 
+class MemoryLane(str):
+    SESSION = "session"
+    WORKING = "working"
+    RESUME = "resume"
+    SEMANTIC = "semantic"
+    EPISODIC = "episodic"
+
 class MemoryEntry(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     role: str
     content: str
+    lane: str = MemoryLane.SESSION
+    source: str = "user"
+    confidence: float = 1.0
+    sensitivity: str = "internal" # internal, confidential, public
+    schema_version: str = "3.0"
     metadata: Optional[Dict[str, Any]] = None
 
 class LearningEntry(BaseModel):
@@ -18,18 +30,31 @@ class LearningEntry(BaseModel):
     fact: str
     context: Optional[str] = None
     relevance_score: float = 1.0
+    confidence: float = 1.0
+    source: str = "observation"
 
 class LearningMemory(BaseModel):
     agent_id: str
     user_patterns: List[LearningEntry] = []
     self_patterns: List[LearningEntry] = []
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    schema_version: str = "3.0"
 
 class AgentMemory(BaseModel):
     agent_id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
     system_prompt: str
+    # 5-Lane Architecture
+    session: List[MemoryEntry] = []
+    working: List[MemoryEntry] = []
+    resume: Optional[MemoryEntry] = None
+    semantic: List[MemoryEntry] = []
+    episodic: List[MemoryEntry] = []
+    
+    # Legacy support
     entries: List[MemoryEntry] = []
+    schema_version: str = "3.0"
 
 class MemoryStorage:
     """Handles the persistent reading/writing of memory to the local file system."""
@@ -47,6 +72,7 @@ class MemoryStorage:
     def save_memory(self, memory: AgentMemory, format: str = "json"):
         """Saves the AgentMemory object to disk in JSON or YAML format."""
         path = self._get_agent_path(memory.agent_id, format)
+        memory.updated_at = datetime.utcnow()
         data = memory.model_dump(mode="json")
         
         if format == "json":
@@ -73,6 +99,11 @@ class MemoryStorage:
                 data = yaml.safe_load(f)
         else:
             raise ValueError(f"Unsupported memory format: {format}")
+            
+        # Migrate legacy data if needed
+        if isinstance(data, dict) and "entries" in data and ("session" not in data or not data["session"]):
+            # Simple migration: move all to session
+            data["session"] = data.get("entries", [])
             
         return AgentMemory(**data)
 

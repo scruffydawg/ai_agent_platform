@@ -8,18 +8,17 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'framer-motion';
 import CanvasPanel from './components/CanvasPanel';
-import GraphView from './components/GraphView';
-import SettingsView from './components/SettingsView';
-import HelpView from './components/HelpView';
 import SystemsDashboard from './components/SwarmView';
 import SkillForge from './components/SkillForge';
 import ToolRegistry from './components/ToolRegistry';
 import KnowledgeHub from './components/KnowledgeHub';
 
 import { API_BASE, WS_BASE } from './api.js';
+import ResumePanel from './components/ResumePanel';
+import MemoryInspector from './components/MemoryInspector';
 
 const App = () => {
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  const [theme] = useState('dark');
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'GUIDE ONLINE. The Flute Path is clear. How may I navigate for you?', id: 1 }
   ]);
@@ -38,8 +37,8 @@ const App = () => {
   const [showDashboardOverlay, setShowDashboardOverlay] = useState(false);
   const [showCanvas, setShowCanvas] = useState(false);
   const [showSessionsPane, setShowSessionsPane] = useState(false);
-  const [canvasSplitIndex, setCanvasSplitIndex] = useState(0);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [resumeData, setResumeData] = useState(null);
+  const [memoryLanes, setMemoryLanes] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -105,16 +104,48 @@ const App = () => {
     }
   };
 
-  const loadSession = async (id) => {
-    if (!id) {
-      console.warn("Attempted to load session with undefined ID");
-      return;
+  const checkResume = async (id) => {
+    try {
+      const resp = await axios.get(`${API_BASE}/memory/${id}/resume`);
+      if (resp.data.has_resume) {
+        setResumeData(resp.data.resume_data);
+      }
+    } catch (e) {
+      console.error("Failed to check resume memory", e);
     }
+  };
+
+  const handleResume = async () => {
+    if (!resumeData) return;
+    setInput(`Resume: ${resumeData.content}`);
+    setResumeData(null);
+    // Logic to clear it on backend would be handled by the next 'run' call in Orchestrator
+  };
+
+  const fetchMemoryInspect = async () => {
+    if (!currentSessionId) return;
+    try {
+      const resp = await axios.get(`${API_BASE}/memory/${currentSessionId}/inspect`);
+      setMemoryLanes(resp.data.lanes);
+    } catch (e) {
+      console.error("Failed to fetch memory inspection", e);
+    }
+  };
+
+  useEffect(() => {
+    if (activeView === 'memory') {
+      fetchMemoryInspect();
+    }
+  }, [activeView]);
+
+  const loadSession = async (id) => {
+    if (!id) return;
     try {
       const resp = await axios.get(`${API_BASE}/sessions/${id}`);
       setMessages(resp.data.messages.length > 0 ? resp.data.messages : [{ role: 'assistant', content: 'SESSION RESTORED.', id: Date.now() }]);
       setCurrentSessionId(id);
       setActiveView('chat');
+      checkResume(id);
     } catch (e) {
       console.error("Failed to load session", e);
     }
@@ -242,6 +273,8 @@ const App = () => {
     }
   };
 
+
+
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
@@ -337,7 +370,7 @@ const App = () => {
   );
 
   return (
-    <div className={`app-container ${theme === 'dark' ? 'neon-dark' : 'vibrant-light'}`}>
+    <div className="app-container">
       {showPrivacyModal && <PrivacyModal type={showPrivacyModal} onClose={() => setShowPrivacyModal(null)} />}
       
       {/* Sidebar Navigation */}
@@ -388,6 +421,7 @@ const App = () => {
             { id: 'graph', icon: Activity, label: 'Logical Graph' },
             { id: 'knowledge', icon: Library, label: 'Knowledge Hub' },
             { id: 'swarm', icon: Network, label: 'Systems Dashboard' },
+            { id: 'memory', icon: Brain, label: 'Memory Inspector' },
             { id: 'registry', icon: Puzzle, label: 'Tool Registry' },
             { id: 'settings', icon: Settings, label: 'Cognition Settings' }
           ].map(item => (
@@ -609,13 +643,6 @@ const App = () => {
                   </button>
                 )}
 
-                <button 
-                  onClick={toggleTheme} 
-                  className="action-button"
-                  title="Toggle Theme"
-                >
-                  {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                </button>
 
                 <button 
                   onClick={() => handleOpenHelp('basics')}
@@ -648,7 +675,12 @@ const App = () => {
 
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           {activeView === 'chat' && (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', width: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', width: '100%', padding: '0 20px 0 0' }}>
+              <ResumePanel 
+                resumeData={resumeData} 
+                onResume={handleResume} 
+                onDiscard={() => setResumeData(null)} 
+              />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px 15px 0' }}>
                 <h3 style={{ fontSize: '0.9rem', fontWeight: '800', letterSpacing: '1px', opacity: 0.6 }}>OBSERVER TERMINAL</h3>
                 <button 
@@ -804,7 +836,16 @@ const App = () => {
                          />
                       </div>
                     )}
-                  </div>
+                    {activeView === 'memory' && (
+            <div className="card" style={{ height: '100%', overflowY: 'auto' }}>
+               <MemoryInspector contextPacket={memoryLanes ? [
+                 ...(memoryLanes.semantic || []).map(m => ({ ...m, role: 'knowledge' })),
+                 ...(memoryLanes.working || []).map(m => ({ ...m, role: 'working' })),
+                 ...(memoryLanes.session || [])
+               ] : []} />
+            </div>
+          )}
+        </div>
                 );
               })()}
             </div>

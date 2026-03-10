@@ -10,16 +10,30 @@ router = APIRouter()
 @router.post("/upload", response_model=SuccessResponse)
 async def upload_knowledge(file: UploadFile = File(...), category: str = "general"):
     try:
+        filename = file.filename
         content = await file.read()
-        text = content.decode("utf-8")
+        
+        # Determine extraction method
+        if filename.lower().endswith(".docx"):
+            import io
+            from docx import Document
+            doc = Document(io.BytesIO(content))
+            text = "\n".join([para.text for para in doc.paragraphs])
+        else:
+            # Fallback to UTF-8 for .md, .txt, etc.
+            try:
+                text = content.decode("utf-8")
+            except UnicodeDecodeError:
+                raise HTTPException(status_code=400, detail="Unsupported binary format. Please upload .docx, .pdf (handled elsewhere), or text-based files.")
+
         metadata = {
-            "filename": file.filename,
+            "filename": filename,
             "category": category,
             "uploaded_at": time.time()
         }
         success = await kb_manager.ingest_document(text, metadata)
         if success:
-            return SuccessResponse(data={"filename": file.filename}, message="Ingestion successful")
+            return SuccessResponse(data={"filename": filename}, message="Ingestion successful")
         else:
             raise HTTPException(status_code=500, detail="Ingestion failed")
     except Exception as e:

@@ -6,10 +6,11 @@ A self-hosted, LAN-accessible, ADHD-optimized AI Agent Platform and Orchestratio
 
 ## 🚀 Key Features
 
-*   **Multi-Agent Orchestration:** Driven by the `StateGraphOrchestrator` and a Swarm of expert personas (Architect, ADHD_UX, Security, etc.).
-*   **Adaptive Memory (Self-Learning):** Long-term pattern recognition for user preferences and environment adaptation, persisted across sessions.
+*   **GUIDE Architecture v3.0:** A complete memory and capability system featuring a 5-lane memory structure (Session, Working, Resume, Semantic, Episodic) and an 8-stage intelligent Memory Broker retrieval pipeline.
+*   **Multi-Agent Orchestration:** Driven by the `StateGraphOrchestrator` with full async support and a Swarm of expert personas (Architect, ADHD_UX, Security, etc.).
+*   **ADHD-Optimized Recovery:** Features a "Resume Memory" lane for automatic interruption recovery and a "Memory Inspector" for transparent context assembly.
 *   **The "Ouch" Mechanic (Self-Healing):** Native tool-level exception catching, Circuit Breakers, and automated LLM-feedback loops for autonomous error recovery.
-*   **Three-Pillar Tool Registry:** A unified structure for Native Skills, MCP Servers, and Code Tools with integrated **Contextual Consult** (real-time AI guidance for every tool).
+*   **Three-Pillar Tool Registry:** A unified structure for Native Skills, MCP Servers, and Code Tools with integrated **Contextual Consult**.
 *   **SkillForge Wizard:** An AI-powered, back-and-forth interview wizard to help users generate "Skills on Steroids" (standardized Google-style docstrings, usage examples, and automatic Deep Recon discovery for MCP packages).
 *   **Dynamic Visual UI:** A tabbed, responsive React dashboard featuring real-time terminal streams, node telemetry, visual logic graphs, and interactive capability cards.
 *   **Tailscale & LAN Ready:** Fully responsive design (using `dvh` units for mobile/iPad) with dynamic API routing out of the box.

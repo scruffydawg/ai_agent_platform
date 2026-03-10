@@ -90,17 +90,17 @@ const KnowledgeHub = () => {
   );
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '24px', overflow: 'hidden', padding: '20px' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '24px', overflowX: 'hidden', overflowY: 'hidden', padding: '20px', width: '100%', boxSizing: 'border-box' }}>
       {/* Header Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--accent-cyan)', margin: 0, display: 'flex', alignItems: 'center', gap: '14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+        <div style={{ flex: '1 1 300px' }}>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--accent-cyan)', margin: 0, display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
                 <Library size={30} /> KNOWLEDGE HUB
             </h2>
             <p style={{ opacity: 0.6, fontSize: '0.88rem', marginTop: '5px' }}>Manage and search technical reference documentation for your swarm.</p>
         </div>
         
-        <div style={{ position: 'relative', width: '400px' }}>
+        <div style={{ position: 'relative', flex: '1 1 300px', maxWidth: '500px' }}>
           <input
             type="text"
             className="input"
@@ -115,8 +115,8 @@ const KnowledgeHub = () => {
       </div>
 
       {/* Categories Nav */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '8px', background: 'var(--header-bg)', padding: '6px', borderRadius: '12px', width: 'fit-content' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', gap: '8px', background: 'var(--header-bg)', padding: '6px', borderRadius: '12px', width: 'fit-content', flexWrap: 'wrap' }}>
             {categories.map((cat) => {
               const isActive = selectedCategory === cat.name;
               return (
@@ -139,9 +139,9 @@ const KnowledgeHub = () => {
             })}
           </div>
 
-          <label className="button-primary" style={{ cursor: 'pointer', margin: 0 }}>
+          <label className="button-primary" style={{ cursor: 'pointer', margin: 0, flexShrink: 0 }}>
             <Upload size={18} /> INGEST NEW DOCUMENT
-            <input type="file" style={{ display: 'none' }} onChange={handleFileUpload} accept=".pdf,.md,.txt" />
+            <input type="file" style={{ display: 'none' }} onChange={handleFileUpload} accept=".pdf,.md,.txt,.docx" />
           </label>
       </div>
 
@@ -207,7 +207,7 @@ const KnowledgeHub = () => {
                         {result.metadata?.category || 'REFERENCE'}
                       </span>
                     </div>
-                    <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: 1.6, opacity: 0.8, background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '10px', borderLeft: '3px solid var(--accent-cyan)' }}>
+                    <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: 1.6, opacity: 0.8, background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '10px', borderLeft: '3px solid var(--accent-cyan)', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                       "...{result.content.substring(0, 300)}..."
                     </p>
                   </motion.div>
@@ -221,16 +221,16 @@ const KnowledgeHub = () => {
              <p style={{ margin: 0, fontSize: '0.9rem' }}>Try generic terms or check category filters.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px', width: '100%' }}>
              
              {/* Main Hero Card */}
-             <div style={{ gridColumn: 'span 12' }}>
+             <div style={{ gridColumn: '1 / -1' }}>
                 <SectionCard accentColor="var(--accent-cyan)" style={{ position: 'relative' }}>
                     <div style={{ padding: '40px', position: 'relative', zIndex: 1 }}>
                         <div style={{ width: '60px', height: '60px', background: 'var(--accent-cyan)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 10px 30px rgba(0,255,255,0.2)' }}>
                             <Library size={32} color="#000" />
                         </div>
-                        <h3 style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--text-primary)', margin: '0 0 16px 0', letterSpacing: '-0.5px' }}>INTELLIGENT REFERENCE LIBRARY</h3>
+                        <h3 style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--text-primary)', margin: '0 0 16px 0', letterSpacing: '-0.5px', wordBreak: 'break-word' }}>INTELLIGENT REFERENCE LIBRARY</h3>
                         <p style={{ fontSize: '1.05rem', lineHeight: 1.6, opacity: 0.8, maxWidth: '600px', margin: '0 0 30px 0' }}>
                            This library is shared globally across your swarm. When an agent needs a technical specification, workflow node, or coding rule, they will perform Vector Retrieval (RAG) here first.
                         </p>
@@ -240,12 +240,12 @@ const KnowledgeHub = () => {
                             <span style={{ padding: '6px 16px', background: 'rgba(168,85,247,0.1)', color: 'var(--accent-purple)', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900', letterSpacing: '1px', border: '1px solid rgba(168,85,247,0.3)' }}>BGE-LARGE EMBEDDINGS</span>
                         </div>
                     </div>
-                    <Library size={300} style={{ position: 'absolute', right: '-40px', bottom: '-40px', opacity: 0.03, transform: 'rotate(-15deg)' }} />
+                    <Library size={300} style={{ position: 'absolute', right: '-40px', bottom: '-40px', opacity: 0.03, transform: 'rotate(-15deg)', pointerEvents: 'none' }} />
                 </SectionCard>
              </div>
 
              {/* Bento Block 1 */}
-             <div style={{ gridColumn: 'span 6' }}>
+             <div>
                 <SectionCard accentColor="var(--accent-green)" style={{ height: '100%' }}>
                     <SectionHeader icon={Code} title="CODING STANDARDS" color="var(--accent-green)" />
                     <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -260,7 +260,7 @@ const KnowledgeHub = () => {
              </div>
 
              {/* Bento Block 2 */}
-             <div style={{ gridColumn: 'span 6' }}>
+             <div>
                 <SectionCard accentColor="var(--accent-purple)" style={{ height: '100%' }}>
                     <SectionHeader icon={Terminal} title="N8N WORKFLOW RULES" color="var(--accent-purple)" />
                     <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>

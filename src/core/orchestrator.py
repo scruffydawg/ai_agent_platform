@@ -4,6 +4,9 @@ from src.core.state import state_manager
 from src.core.state_schema import AgentState
 from src.ui.cli import cli # For progress tracking updates
 from src.agents.persona_loader import persona_loader
+from src.memory.manager import MemoryManager
+from src.memory.broker import MemoryBroker
+from src.memory.storage import MemoryLane
 from src.utils.logger import logger
 from pathlib import Path
 import json
@@ -13,15 +16,20 @@ class StateGraphOrchestrator(BaseAgent):
     A lightweight, deterministic StateGraph Orchestrator (Phase 2).
     Executes a predefined graph of nodes passing an AgentState payload.
     """
-    def __init__(self, model: str = "gpt-4o", max_transitions: int = 20):
+    def __init__(self, agent_id: str = "graph_orchestrator", model: str = "gpt-4o", max_transitions: int = 20):
         super().__init__(
-            agent_id="graph_orchestrator",
+            agent_id=agent_id,
             system_prompt="You route states through the graph.",
             model=model
         )
         self.nodes: Dict[str, Callable[[AgentState], AgentState]] = {}
         self.edges: Dict[str, Dict[str, Any]] = {} # node -> dict of edge conditions
         self.max_transitions = max_transitions
+        
+        # GUIDE Memory Support
+        self.memory_manager = MemoryManager(self.agent_id, self.system_prompt)
+        self.memory_broker = MemoryBroker()
+        
         self._load_dynamic_flow()
 
     def _load_dynamic_flow(self):
@@ -57,8 +65,29 @@ class StateGraphOrchestrator(BaseAgent):
                  state.add_message("system", f"Expert {expert_name} persona not found.", sender=expert_name)
                  return state
 
-            # Mocking execution for now, but in reality we'd call LLM with persona context
+            # 1. Assemble context via Memory Broker (GUIDE Stage 8)
+            # We treat the last user message as the request
+            last_msg = state.get_last_message()
+            request = last_msg.content if last_msg else "Continue task"
+            
+            # Assemble the packet
+            state.context_packet = self.memory_broker.assemble_context_packet(
+                request, self.memory_manager.memory
+            )
+            
+            # 2. Update Working Memory (GUIDE Section 3.2)
+            self.memory_manager.add_message(
+                "system", 
+                f"Executing node: {expert_name}", 
+                lane=MemoryLane.WORKING
+            )
+            
+            # Mocking execution for now
             state.add_message("assistant", f"Processing via {expert_name}...", sender=expert_name)
+            
+            # Record outcome in session lane
+            self.memory_manager.add_message("assistant", f"Result from {expert_name}", lane=MemoryLane.SESSION)
+            
             return state
         return expert_node_func
 
@@ -111,9 +140,18 @@ class StateGraphOrchestrator(BaseAgent):
         state.next_node = "observing"
         return state
 
-    def run_graph(self, initial_state: AgentState) -> AgentState:
+    async def run_graph(self, initial_state: AgentState) -> AgentState:
         """Executes the graph deterministically until reaching the END node or max transitions."""
         
+        # 1. Resume Memory Check (GUIDE Section 13.1)
+        if self.memory_manager.memory.resume:
+            logger.info("Orchestrator: Found Resume Memory. Handling re-entry...")
+            # In a real app, we'd prompt the user here. For now, we auto-resume.
+            resume_entry = self.memory_manager.memory.resume
+            initial_state.add_message("system", f"RESUMING TASK: {resume_entry.content}")
+            # Clear resume after loading
+            self.memory_manager.clear(lanes=[MemoryLane.RESUME])
+
         current_node_name = initial_state.current_node
         state = initial_state
         transitions = 0
@@ -146,7 +184,7 @@ class StateGraphOrchestrator(BaseAgent):
             
             try:
                 node_func = self.nodes[current_node_name]
-                state = node_func(state) # The node MUST return the modified state
+                state = await node_func(state) # The node MUST return the modified state
                 state.current_node = current_node_name
             except Exception as e:
                 state.error = f"Node execution failed: {e}"

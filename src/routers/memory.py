@@ -12,20 +12,34 @@ class LearnRequest(BaseModel):
     context: Optional[str] = None
     is_user_pattern: bool = True
 
-@router.get("/{agent_id}/learnings")
-async def get_learnings(agent_id: str):
-    """Returns all stored learnings for an agent."""
-    # We initialize a temporary manager just to load the learning file
+@router.get("/{agent_id}/resume")
+async def get_resume(agent_id: str):
+    """Checks if there is a pending resume memory for the agent."""
+    mgr = MemoryManager(agent_id=agent_id, system_prompt="")
+    resume = mgr.memory.resume
+    if resume:
+        return {"has_resume": True, "resume_data": resume.model_dump(mode="json")}
+    return {"has_resume": False}
+
+@router.get("/{agent_id}/inspect")
+async def inspect_memory(agent_id: str):
+    """Returns a full inspection of all 5 memory lanes."""
     mgr = MemoryManager(agent_id=agent_id, system_prompt="")
     return {
         "agent_id": agent_id,
-        "user_patterns": mgr.learning.user_patterns,
-        "self_patterns": mgr.learning.self_patterns,
-        "summary": mgr.get_learning_summary()
+        "lanes": {
+            "session": mgr.memory.session,
+            "working": mgr.memory.working,
+            "resume": mgr.memory.resume,
+            "semantic": mgr.memory.semantic,
+            "episodic": mgr.memory.episodic
+        },
+        "schema_version": mgr.memory.schema_version
     }
 
 @router.post("/{agent_id}/learn")
 async def add_learning(agent_id: str, req: LearnRequest):
+# ... existing code ...
     """Manually records a learning fact."""
     mgr = MemoryManager(agent_id=agent_id, system_prompt="")
     if req.is_user_pattern:

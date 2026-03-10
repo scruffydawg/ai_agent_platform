@@ -587,20 +587,20 @@ const ToolRegistry = () => {
         return (
             <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 className="card" onClick={() => openEditor(tool)}
-                style={{ padding: '24px', borderTop: `3px solid ${border}`, background: 'var(--panel-bg)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '200px', boxShadow: 'var(--card-shadow)', cursor: 'pointer' }}
+                style={{ padding: '24px', background: 'var(--panel-bg)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '200px', cursor: 'pointer' }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{ padding: '11px', borderRadius: '11px', background: `${border}18`, border: `1px solid ${border}` }}>
+                        <div style={{ padding: '11px', borderRadius: '11px', background: 'var(--nav-hover-bg)', border: '1px solid var(--border-color)' }}>
                             {getIcon(tool?.icon)}
                         </div>
                         <div>
-                            <h3 style={{ fontSize: '0.95rem', fontWeight: '800', margin: 0 }}>{tool?.name || 'Unknown Tool'}</h3>
+                            <h3 style={{ fontSize: '0.95rem', fontWeight: '800', margin: 0, color: border }}>{tool?.name || 'Unknown Tool'}</h3>
                             <span 
                                 title={HELP_DATA[subtypeLabel(tool)] || ''}
                                 style={{ 
                                     fontSize: '0.6rem', 
-                                    color: border, 
+                                    color: 'var(--text-secondary)', 
                                     fontWeight: '900', 
                                     textTransform: 'uppercase', 
                                     letterSpacing: '1.5px',

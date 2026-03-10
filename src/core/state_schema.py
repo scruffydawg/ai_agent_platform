@@ -15,6 +15,12 @@ class AgentState(BaseModel):
     messages: List[NodeMessage] = Field(default_factory=list)
     current_node: str = "START"
     next_node: Optional[str] = None
+    
+    # GUIDE Working Memory Support
+    current_task: Optional[str] = None
+    step_index: int = 0
+    context_packet: List[Dict[str, str]] = Field(default_factory=list)
+    
     variables: Dict[str, Any] = Field(default_factory=dict)
     error: Optional[str] = None
     
