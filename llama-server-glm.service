@@ -1,0 +1,32 @@
+[Unit]
+Description=llama-server GLM-4.7-Flash
+After=network.target
+
+[Service]
+Type=simple
+User=scruffydawg
+WorkingDirectory=/home/scruffydawg/gemini_workspace/ai_agent_platform/llama.cpp
+ExecStart=/home/scruffydawg/gemini_workspace/ai_agent_platform/llama.cpp/build/bin/llama-server \
+  --model /home/scruffydawg/gemini_workspace/ai_agent_platform/models/glm-4.7-flash/Huihui-GLM-4.7-Flash-abliterated.Q4_K_M.gguf \
+  --host 0.0.0.0 \
+  --port 8081 \
+  --ctx-size 65536 \
+  --ngl 99 \
+  --flash-attn \
+  --cache-type-k q8_0 \
+  --cache-type-v q4_0 \
+  --batch-size 512 \
+  --ubatch-size 512 \
+  --temp 1.0 \
+  --top-p 0.95 \
+  --min-p 0.01 \
+  --repeat-penalty 1.0 \
+  --jinja \
+  --parallel 1
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -54,7 +54,10 @@ QDRANT_URL = os.getenv("QDRANT_URL", f"http://localhost:6333")
 SEARXNG_URL = os.getenv("SEARXNG_URL", f"http://localhost:8080/search")
 
 # --- LLM & Memory Settings (Tai Mae Optimized) ---
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "qwen3.5:27b") # Optimized for 24GB VRAM (RTX 3090)
-LLM_ENGINE = os.getenv("LLM_ENGINE", "ollama")
-LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://127.0.0.1:11434/v1")
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "glm-4.7-flash") # Migrated to GLM-4.7-Flash (Abliterated)
+VISION_MODEL = os.getenv("VISION_MODEL", "glm-4.7-flash")     # Native vision support via llama-server
+VOICE_MODEL = os.getenv("VOICE_MODEL", "kokoro:latest")    # Placeholder for local TTS (2-3GB)
+LLM_ENGINE = os.getenv("LLM_ENGINE", "llama-server")       # Migrated from Ollama
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://127.0.0.1:8081/v1") # Port 8081 for llama-server
 MEMORY_SOFT_LIMIT = 50000  # Optimized for Qwen 262K context window
+LLM_NUM_CTX = int(os.getenv("LLM_NUM_CTX", "8192")) # Reduced to 8k for stable 100% GPU offload on 24GB VRAM
